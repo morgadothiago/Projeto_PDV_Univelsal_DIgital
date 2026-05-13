@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import { Resend } from 'resend';
 import { DbService } from '../../database/db.service';
 import { users } from '../../database/schema/users';
 import { tenants } from '../../database/schema/tenants';
@@ -147,14 +148,14 @@ export class AuthService {
     const resendKey = this.configService.get<string>('RESEND_API_KEY');
     if (resendKey) {
       try {
-        const { Resend } = await import('resend');
         const resend = new Resend(resendKey);
-        await resend.emails.send({
+        const result = await resend.emails.send({
           from: 'PDV Universal <onboarding@resend.dev>',
           to: email,
           subject: 'Recuperação de senha — PDV Universal',
           html: `<p>Clique no link para redefinir sua senha:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Link válido por 1 hora.</p>`,
         });
+        console.log('[Resend] Email sent:', JSON.stringify(result));
       } catch (err) {
         console.error('[Resend] Failed to send reset email:', err);
       }
