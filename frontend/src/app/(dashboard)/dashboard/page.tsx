@@ -138,7 +138,7 @@ export default function DashboardPage() {
         </header>
 
         <div
-          className="flex flex-col overflow-y-auto"
+          className="flex flex-col overflow-y-auto pb-16"
           style={{ gap: '16px', padding: '20px 16px 24px' }}
         >
           <div className="flex flex-col" style={{ gap: '2px' }}>

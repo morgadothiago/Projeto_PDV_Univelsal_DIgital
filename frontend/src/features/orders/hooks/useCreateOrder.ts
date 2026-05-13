@@ -13,24 +13,30 @@ export function useCreateOrder() {
   const cartItems = useCartStore((s) => s.items)
 
   const mutation = useMutation({
-    mutationFn: (dto: ICreateOrder) => orderApi.create(dto),
+    mutationFn: async (dto: ICreateOrder) => {
+      const order = await orderApi.create(dto)
+      if (dto.paymentMethod !== 'pix') {
+        await orderApi.confirmCash(order.orderId)
+      }
+      return order
+    },
     onSuccess: (order) => {
-      // Enrich order items with cart data (name/price not returned by all backends)
       const enriched = {
-        ...order,
-        items: order.items.length
-          ? order.items
-          : cartItems.map((i) => ({
-              productId: i.productId,
-              name: i.name,
-              quantity: i.quantity,
-              price: i.price,
-            })),
+        orderId: order.orderId,
+        total: order.total,
+        paymentMethod: order.payment.method,
+        pixQrCode: order.payment.pixQrCode ?? undefined,
+        items: cartItems.map((i) => ({
+          productId: i.productId,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+        createdAt: new Date().toISOString(),
       }
       setLastOrder(enriched)
 
-      if (order.pixQrCode) {
-        // Caller handles PIX QR modal before navigating
+      if (order.payment.pixQrCode) {
         return
       }
       router.push('/recibo')

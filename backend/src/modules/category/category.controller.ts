@@ -36,6 +36,7 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Get()
+  @Roles('store_owner', 'super_admin', 'cashier')
   @ApiOperation({ summary: 'Lista todas as categorias do tenant' })
   @ApiResponse({ status: 200, description: 'Lista de categorias' })
   @ApiResponse({ status: 401, description: 'Token JWT ausente ou inválido' })

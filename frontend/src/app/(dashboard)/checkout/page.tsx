@@ -195,8 +195,8 @@ export default function CheckoutPage() {
       },
       {
         onSuccess: (order) => {
-          if (order.pixQrCode) {
-            setPixQrData({ qrCode: order.pixQrCode, orderId: order.orderId })
+          if (order.payment?.pixQrCode) {
+            setPixQrData({ qrCode: order.payment.pixQrCode, orderId: order.orderId })
           } else {
             router.push('/recibo')
           }

@@ -10,6 +10,17 @@ export interface IOrderItem {
   price: number
 }
 
+export interface ICreateOrderResponse {
+  orderId: string
+  total: number
+  status: string
+  payment: {
+    method: string
+    pixQrCode: string | null
+    pixQrCodeBase64: string | null
+  }
+}
+
 export interface IOrder {
   orderId: string
   total: number

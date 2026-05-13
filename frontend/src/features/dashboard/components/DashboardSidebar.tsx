@@ -1,3 +1,7 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   ShoppingCart,
   LayoutDashboard,
@@ -6,6 +10,7 @@ import {
   Archive,
   Users,
   BarChart2,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/auth.store'
@@ -13,49 +18,50 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 interface NavItem {
   label: string
   icon: LucideIcon
-  active: boolean
+  href: string
+  matchPrefix: string
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, active: true },
-  { label: 'Produtos', icon: Package, active: false },
-  { label: 'Categorias', icon: Tag, active: false },
-  { label: 'Estoque', icon: Archive, active: false },
-  { label: 'Caixeiros', icon: Users, active: false },
-  { label: 'Relatórios', icon: BarChart2, active: false },
+  { label: 'Dashboard',  icon: LayoutDashboard, href: '/dashboard',   matchPrefix: '/dashboard' },
+  { label: 'Produtos',   icon: Package,         href: '/produtos',    matchPrefix: '/produtos' },
+  { label: 'Categorias', icon: Tag,             href: '/categorias',  matchPrefix: '/categorias' },
+  { label: 'Estoque',    icon: Archive,         href: '/estoque',     matchPrefix: '/estoque' },
+  { label: 'Caixeiros',  icon: Users,           href: '/caixeiros',   matchPrefix: '/caixeiros' },
+  { label: 'Relatórios', icon: BarChart2,       href: '/relatorios',  matchPrefix: '/relatorios' },
 ]
 
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
+  return name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
 }
 
 export function DashboardSidebar() {
-  const { user } = useAuthStore()
+  const pathname = usePathname()
+  const router   = useRouter()
+  const { user, clearAuth } = useAuthStore()
+
   const displayName = user?.name ?? 'Usuário'
-  const initials = getInitials(displayName)
+  const initials    = getInitials(displayName)
+  const roleLabel   = user?.role === 'store_owner' ? 'Dono da loja' : 'Caixeiro'
+
+  function handleLogout() {
+    clearAuth()
+    router.replace('/login')
+  }
 
   return (
     <aside
       className="hidden md:flex flex-col h-screen flex-shrink-0"
       style={{ width: '240px', backgroundColor: '#0F172A' }}
     >
+      {/* Logo */}
       <div
         className="flex items-center"
         style={{ gap: '12px', padding: '0 20px 24px 20px' }}
       >
         <div
           className="flex items-center justify-center flex-shrink-0"
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            backgroundColor: '#1E3A5F',
-          }}
+          style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#1E3A5F' }}
         >
           <ShoppingCart size={18} style={{ color: '#2563EB' }} />
         </div>
@@ -69,54 +75,53 @@ export function DashboardSidebar() {
 
       <div style={{ height: '1px', backgroundColor: '#1E293B', width: '100%' }} />
 
-      <nav
-        className="flex flex-col flex-1"
-        style={{ gap: '4px', padding: '16px 12px' }}
-      >
-        {navItems.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center cursor-pointer"
-            style={{
-              gap: '10px',
-              height: '40px',
-              padding: '0 12px',
-              borderRadius: '8px',
-              backgroundColor: item.active ? '#1E3A5F' : 'transparent',
-            }}
-          >
-            <item.icon
-              size={16}
-              style={{ color: item.active ? '#60A5FA' : '#94A3B8', flexShrink: 0 }}
-            />
-            <span
+      {/* Nav */}
+      <nav className="flex flex-col flex-1" style={{ gap: '4px', padding: '16px 12px' }}>
+        {navItems.map((item) => {
+          const isActive = pathname.startsWith(item.matchPrefix)
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="flex items-center no-underline"
               style={{
-                fontSize: '14px',
-                fontWeight: item.active ? 600 : 400,
-                color: item.active ? '#FFFFFF' : '#94A3B8',
-                fontFamily: 'Inter, sans-serif',
+                gap: '10px',
+                height: '40px',
+                padding: '0 12px',
+                borderRadius: '8px',
+                backgroundColor: isActive ? '#1E3A5F' : 'transparent',
+                textDecoration: 'none',
               }}
             >
-              {item.label}
-            </span>
-          </div>
-        ))}
+              <item.icon
+                size={18}
+                style={{ color: isActive ? '#60A5FA' : '#94A3B8', flexShrink: 0 }}
+              />
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? '#FFFFFF' : '#94A3B8',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {item.label}
+              </span>
+            </Link>
+          )
+        })}
       </nav>
 
       <div style={{ height: '1px', backgroundColor: '#1E293B', width: '100%' }} />
 
+      {/* Footer */}
       <div
         className="flex items-center"
-        style={{ padding: '16px 16px', gap: '10px' }}
+        style={{ padding: '16px', gap: '10px' }}
       >
         <div
           className="flex items-center justify-center flex-shrink-0"
-          style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            backgroundColor: '#1E3A5F',
-          }}
+          style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#1E3A5F' }}
         >
           <span
             className="font-bold"
@@ -125,7 +130,7 @@ export function DashboardSidebar() {
             {initials}
           </span>
         </div>
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 flex-1">
           <span
             className="font-semibold truncate"
             style={{ fontSize: '13px', color: '#FFFFFF', fontFamily: 'Inter, sans-serif' }}
@@ -133,9 +138,26 @@ export function DashboardSidebar() {
             {displayName}
           </span>
           <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'Inter, sans-serif' }}>
-            Dono da loja
+            {roleLabel}
           </span>
         </div>
+        <button
+          onClick={handleLogout}
+          aria-label="Sair"
+          title="Sair"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            color: '#64748B',
+          }}
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </aside>
   )

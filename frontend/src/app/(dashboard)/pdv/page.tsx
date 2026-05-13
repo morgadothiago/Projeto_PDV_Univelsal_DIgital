@@ -115,7 +115,7 @@ export default function PdvPage() {
         <div className="flex flex-1 min-h-0">
 
           {/* Product area */}
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-[#F8FAFC] p-4 md:p-5">
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-[#F8FAFC] p-4 md:p-5 pb-16 md:pb-5">
             <CategoryPills
               categories={categories}
               activeId={activeCategoryId}
