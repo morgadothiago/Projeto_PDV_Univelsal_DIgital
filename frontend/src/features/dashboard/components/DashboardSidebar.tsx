@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -10,10 +11,13 @@ import {
   Archive,
   Users,
   BarChart2,
+  ClipboardList,
+  Settings,
   LogOut,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { useTenantStore } from '@/store/useTenantStore'
 
 interface NavItem {
   label: string
@@ -23,12 +27,14 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',  icon: LayoutDashboard, href: '/dashboard',   matchPrefix: '/dashboard' },
-  { label: 'Produtos',   icon: Package,         href: '/produtos',    matchPrefix: '/produtos' },
-  { label: 'Categorias', icon: Tag,             href: '/categorias',  matchPrefix: '/categorias' },
-  { label: 'Estoque',    icon: Archive,         href: '/estoque',     matchPrefix: '/estoque' },
-  { label: 'Caixeiros',  icon: Users,           href: '/caixeiros',   matchPrefix: '/caixeiros' },
-  { label: 'Relatórios', icon: BarChart2,       href: '/relatorios',  matchPrefix: '/relatorios' },
+  { label: 'Dashboard',    icon: LayoutDashboard, href: '/dashboard',      matchPrefix: '/dashboard' },
+  { label: 'Produtos',     icon: Package,         href: '/produtos',       matchPrefix: '/produtos' },
+  { label: 'Categorias',   icon: Tag,             href: '/categorias',     matchPrefix: '/categorias' },
+  { label: 'Estoque',      icon: Archive,         href: '/estoque',        matchPrefix: '/estoque' },
+  { label: 'Pedidos',      icon: ClipboardList,   href: '/pedidos',        matchPrefix: '/pedidos' },
+  { label: 'Caixeiros',    icon: Users,           href: '/caixeiros',      matchPrefix: '/caixeiros' },
+  { label: 'Relatórios',   icon: BarChart2,       href: '/relatorios',     matchPrefix: '/relatorios' },
+  { label: 'Configurações',icon: Settings,        href: '/configuracoes',  matchPrefix: '/configuracoes' },
 ]
 
 function getInitials(name: string): string {
@@ -39,6 +45,11 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const { user, clearAuth } = useAuthStore()
+  const primaryColor = useTenantStore((s) => s.primaryColor)
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--pdv-primary', primaryColor)
+  }, [primaryColor])
 
   const displayName = user?.name ?? 'Usuário'
   const initials    = getInitials(displayName)
@@ -89,13 +100,14 @@ export function DashboardSidebar() {
                 height: '40px',
                 padding: '0 12px',
                 borderRadius: '8px',
-                backgroundColor: isActive ? '#1E3A5F' : 'transparent',
+                backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
                 textDecoration: 'none',
+                borderLeft: isActive ? `3px solid ${primaryColor}` : '3px solid transparent',
               }}
             >
               <item.icon
                 size={18}
-                style={{ color: isActive ? '#60A5FA' : '#94A3B8', flexShrink: 0 }}
+                style={{ color: isActive ? primaryColor : '#94A3B8', flexShrink: 0 }}
               />
               <span
                 style={{

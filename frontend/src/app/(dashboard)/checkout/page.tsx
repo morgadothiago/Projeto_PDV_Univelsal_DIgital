@@ -9,10 +9,13 @@ import {
   CreditCard,
   Check,
   X,
+  AlertTriangle,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCartStore, selectTotal } from '@/features/orders/store/cart.store'
 import { useOrderStore } from '@/features/orders/store/order.store'
 import { useCreateOrder } from '@/features/orders/hooks/useCreateOrder'
+import { orderApi } from '@/features/orders/api/order.api'
 import { RemoveItemModal } from '@/features/orders/components/RemoveItemModal'
 import { CancelSaleModal } from '@/features/orders/components/CancelSaleModal'
 import { Sidebar } from '@/components/shared/Sidebar'
@@ -95,7 +98,7 @@ interface PixDialogProps {
 function PixDialog({ qrCode, orderId, onClose }: PixDialogProps) {
   const router = useRouter()
 
-  function handleClose() {
+  function handleConfirm() {
     onClose()
     router.push('/recibo')
   }
@@ -111,7 +114,7 @@ function PixDialog({ qrCode, orderId, onClose }: PixDialogProps) {
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6">
         <div className="flex items-center justify-between">
           <span className="text-[16px] font-bold text-[#0F172A]">Pagar com PIX</span>
-          <button onClick={handleClose} aria-label="Fechar">
+          <button onClick={onClose} aria-label="Fechar">
             <X size={20} className="text-[#64748B]" />
           </button>
         </div>
@@ -127,7 +130,7 @@ function PixDialog({ qrCode, orderId, onClose }: PixDialogProps) {
         </div>
         <p className="text-center text-[12px] text-[#64748B] break-all">{qrCode}</p>
         <button
-          onClick={handleClose}
+          onClick={handleConfirm}
           className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#16A34A] text-[15px] font-semibold text-white"
         >
           <Check size={18} aria-hidden />
@@ -157,6 +160,7 @@ export default function CheckoutPage() {
   const [removeModalItem, setRemoveModalItem] = useState<CartItem | null>(null)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [pixQrData, setPixQrData] = useState<{ qrCode: string; orderId: string } | null>(null)
+  const [lowStockWarning, setLowStockWarning] = useState<{ name: string; available: number } | null>(null)
 
   const canFinish = items.length > 0 && paymentMethod !== null && !isPending
 
@@ -180,13 +184,16 @@ export default function CheckoutPage() {
     }
   }
 
-  function handleCancelConfirm() {
+  async function handleCancelConfirm() {
+    if (pixQrData?.orderId) {
+      try { await orderApi.cancel(pixQrData.orderId) } catch { /* ignora */ }
+    }
     clearCart()
     setShowCancelModal(false)
-    router.push('/pdv')
+    router.push('/venda-cancelada')
   }
 
-  function handleFinish() {
+  function submitOrder() {
     if (!paymentMethod) return
     createOrder(
       {
@@ -203,6 +210,24 @@ export default function CheckoutPage() {
         },
       }
     )
+  }
+
+  function handleFinish() {
+    if (!paymentMethod) return
+
+    // Stock validation warning
+    const insufficientItem = items.find(
+      (item) => item.stockEnabled && item.quantity > item.stock
+    )
+    if (insufficientItem) {
+      toast.warning(
+        `Atenção: produto "${insufficientItem.name}" com estoque insuficiente (${insufficientItem.stock} disponíveis). Confirme para continuar mesmo assim.`
+      )
+      setLowStockWarning({ name: insufficientItem.name, available: insufficientItem.stock })
+      return
+    }
+
+    submitOrder()
   }
 
   return (
@@ -453,6 +478,44 @@ export default function CheckoutPage() {
           orderId={pixQrData.orderId}
           onClose={() => setPixQrData(null)}
         />
+      )}
+
+      {lowStockWarning && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-5"
+          style={{ backgroundColor: 'rgba(15,23,42,0.5)' }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Aviso de estoque insuficiente"
+        >
+          <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={22} className="text-[#F59E0B] flex-shrink-0" aria-hidden />
+              <span className="text-[16px] font-bold text-[#0F172A]">Estoque insuficiente</span>
+            </div>
+            <p className="text-[13px] text-[#64748B]">
+              O produto <strong>&quot;{lowStockWarning.name}&quot;</strong> tem apenas{' '}
+              <strong>{lowStockWarning.available}</strong> unidade(s) disponível(is). Deseja continuar mesmo assim?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLowStockWarning(null)}
+                className="flex flex-1 h-11 items-center justify-center rounded-xl border border-[#E2E8F0] text-[14px] font-semibold text-[#64748B]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setLowStockWarning(null)
+                  submitOrder()
+                }}
+                className="flex flex-1 h-11 items-center justify-center rounded-xl bg-[#F59E0B] text-[14px] font-semibold text-white"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -3,6 +3,7 @@ export interface IProduct {
   name: string
   price: number
   unitType: string
+  customUnit?: string | null
   categoryId: string | null
   categoryName: string | null
   imageUrl: string | null

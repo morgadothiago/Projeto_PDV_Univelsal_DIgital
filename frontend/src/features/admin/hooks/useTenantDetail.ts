@@ -9,3 +9,12 @@ export function useTenantDetail(id: string) {
     enabled: Boolean(id),
   })
 }
+
+export function useTenantSummary(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'tenants', id, 'summary'],
+    queryFn: () => adminApi.getTenantSummary(id),
+    staleTime: 30 * 1000,
+    enabled: Boolean(id),
+  })
+}

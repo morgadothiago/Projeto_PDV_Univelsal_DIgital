@@ -5,47 +5,9 @@ import { Plus } from 'lucide-react'
 import { AdminTopBar } from '@/features/admin/components/AdminTopBar'
 import { TenantRow } from '@/features/admin/components/TenantRow'
 import { useTenants } from '@/features/admin/hooks/useTenants'
-import type { ITenant } from '@/features/admin/interfaces/admin.interface'
-
-const PLACEHOLDER_TENANTS: ITenant[] = [
-  {
-    id: '1',
-    name: 'Padaria Central',
-    type: 'bakery',
-    plan: 'pro',
-    stockEnabled: true,
-    isActive: true,
-    settings: null,
-    createdAt: '2026-01-10T00:00:00.000Z',
-    updatedAt: '2026-05-01T00:00:00.000Z',
-  },
-  {
-    id: '2',
-    name: 'Mercado Verde',
-    type: 'retail',
-    plan: 'free',
-    stockEnabled: true,
-    isActive: true,
-    settings: null,
-    createdAt: '2026-02-15T00:00:00.000Z',
-    updatedAt: '2026-05-01T00:00:00.000Z',
-  },
-  {
-    id: '3',
-    name: 'Casa & Material',
-    type: 'generic',
-    plan: 'free',
-    stockEnabled: false,
-    isActive: false,
-    settings: null,
-    createdAt: '2026-03-20T00:00:00.000Z',
-    updatedAt: '2026-05-01T00:00:00.000Z',
-  },
-]
-
 export default function LojasPage() {
   const { data, isLoading } = useTenants()
-  const tenants = data?.data ?? PLACEHOLDER_TENANTS
+  const tenants = data?.data ?? []
 
   const topBarLeft = (
     <div className="flex flex-col">

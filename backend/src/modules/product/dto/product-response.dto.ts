@@ -21,6 +21,9 @@ export class ProductResponseDto {
   @ApiProperty({ enum: ['unit', 'weight', 'digital'], example: 'unit' })
   unitType!: string;
 
+  @ApiPropertyOptional({ example: 'm³', nullable: true })
+  customUnit?: string | null;
+
   @ApiProperty({ example: 10 })
   stock!: number;
 

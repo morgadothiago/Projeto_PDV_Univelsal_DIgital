@@ -26,6 +26,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onAdd }: ProductCardProps) {
   const colorPair = BG_COLORS[getColorIndex(product.id)]
+  const unitLabel = product.customUnit || (product.unitType === 'weight' ? 'kg' : 'un')
 
   return (
     <button
@@ -47,10 +48,15 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
         {product.name}
       </span>
 
-      {/* Price */}
-      <span className="text-[13px] font-bold text-[#2563EB]">
-        {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-      </span>
+      {/* Price + unit */}
+      <div className="flex items-baseline gap-1">
+        <span className="text-[13px] font-bold text-[#2563EB]">
+          {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </span>
+        <span className="text-[11px] text-[#94A3B8]">
+          por {unitLabel}
+        </span>
+      </div>
     </button>
   )
 }

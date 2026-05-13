@@ -59,10 +59,11 @@ export class ProductService {
       name: dto.name,
       price: String(dto.price),
       unitType: dto.unitType,
+      customUnit: dto.customUnit ?? null,
       categoryId: dto.categoryId ?? null,
       stock: '0',
       stockThreshold: dto.stockThreshold !== undefined ? String(dto.stockThreshold) : '5',
-      isActive: true,
+      isActive: dto.isActive ?? true,
       createdAt: now,
       updatedAt: now,
     });
@@ -95,6 +96,7 @@ export class ProductService {
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.price !== undefined) updateData.price = String(dto.price);
     if (dto.unitType !== undefined) updateData.unitType = dto.unitType;
+    if (dto.customUnit !== undefined) updateData.customUnit = dto.customUnit;
     if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
     if (dto.stockThreshold !== undefined) updateData.stockThreshold = String(dto.stockThreshold);
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
@@ -125,6 +127,7 @@ export class ProductService {
       name: item.product.name,
       price: Number(item.product.price),
       unitType: item.product.unitType,
+      customUnit: item.product.customUnit,
       stock: Number(item.product.stock),
       stockThreshold: Number(item.product.stockThreshold),
       isActive: item.product.isActive,

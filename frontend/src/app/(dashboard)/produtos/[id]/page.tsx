@@ -7,6 +7,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useCategories } from '@/features/products/hooks/useCategories'
 import { productCrudApi } from '@/features/products/api/product-crud.api'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
@@ -19,6 +20,7 @@ const schema = z.object({
   stockEnabled: z.boolean(),
   lowStockThreshold: z.string().min(1),
   isActive: z.boolean(),
+  customUnit: z.string().max(20).optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -79,6 +81,7 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
       price: '',
       categoryId: '',
       name: '',
+      customUnit: '',
     },
     values: product
       ? {
@@ -89,6 +92,7 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
           stockEnabled: true,
           lowStockThreshold: '10',
           isActive: product.active,
+          customUnit: product.customUnit ?? '',
         }
       : undefined,
   })
@@ -100,16 +104,20 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
       productCrudApi.update(id, {
         name: data.name,
         price: parseFloat(data.price),
-        categoryId: data.categoryId,
-        type: data.type,
-        stockEnabled: data.stockEnabled,
-        lowStockThreshold: parseInt(data.lowStockThreshold, 10),
+        categoryId: data.categoryId || undefined,
+        unitType: data.type,
+        stockThreshold: data.stockEnabled ? parseInt(data.lowStockThreshold, 10) : undefined,
         isActive: data.isActive,
+        customUnit: data.customUnit || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', id] })
+      toast.success('Produto atualizado!')
       router.push('/produtos')
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar produto')
     },
   })
 
@@ -117,7 +125,11 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
     mutationFn: () => productCrudApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Produto excluído')
       router.push('/produtos')
+    },
+    onError: () => {
+      toast.error('Erro ao excluir produto')
     },
   })
 
@@ -306,6 +318,30 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
                   </div>
                 )}
               />
+            </FieldGroup>
+
+            {/* Custom unit */}
+            <FieldGroup label="Unidade customizada (opcional)">
+              <input
+                {...register('customUnit')}
+                type="text"
+                placeholder="Ex: m, m², m³, L, saco, barra"
+                className="border outline-none"
+                style={{
+                  height: '48px',
+                  padding: '0 14px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FFFFFF',
+                  borderColor: '#E2E8F0',
+                  fontSize: '14px',
+                  color: '#0F172A',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                Deixe vazio para usar a unidade padrão
+              </span>
             </FieldGroup>
 
             {/* Stock toggle */}

@@ -44,3 +44,31 @@ export const TENANT_TYPE_LABELS: Record<TenantType, string> = {
   retail: 'Varejo',
   digital: 'Digital',
 }
+
+export interface ITenantSummaryMetrics {
+  totalRevenue: string
+  totalOrders: number
+  totalProducts: number
+  activeCashiers: number
+}
+
+export interface ITenantSummaryOrder {
+  id: string
+  cashierName: string
+  total: string
+  status: string
+  createdAt: string
+}
+
+export interface ITenantSummaryLowStock {
+  id: string
+  name: string
+  stock: string
+  stockThreshold: string
+}
+
+export interface ITenantSummary {
+  metrics: ITenantSummaryMetrics
+  recentOrders: ITenantSummaryOrder[]
+  lowStockProducts: ITenantSummaryLowStock[]
+}

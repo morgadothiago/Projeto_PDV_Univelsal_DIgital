@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCartStore, selectTotal } from '../store/cart.store'
 import { CartItem } from './CartItem'
 
@@ -11,6 +12,7 @@ const PAYMENT_METHODS = [
 ]
 
 export function CartPanel() {
+  const router = useRouter()
   const items = useCartStore((s) => s.items)
   const paymentMethod = useCartStore((s) => s.paymentMethod)
   const clearCart = useCartStore((s) => s.clearCart)
@@ -94,6 +96,7 @@ export function CartPanel() {
 
         {/* Finish button */}
         <button
+          onClick={() => router.push('/checkout')}
           disabled={!canFinish}
           aria-label="Finalizar venda"
           className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#16A34A] text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"

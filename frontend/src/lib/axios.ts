@@ -7,7 +7,6 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    // Token injected by auth store after hydration
     const raw = localStorage.getItem('pdv-auth')
     if (raw) {
       try {
@@ -24,15 +23,96 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (token: string) => void
+  reject: (err: unknown) => void
+}> = []
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token!)
+    }
+  })
+  failedQueue = []
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
+  async (error) => {
+    const originalRequest = error.config as typeof error.config & { _retry?: boolean }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (typeof window === 'undefined') {
+        return Promise.reject(error)
+      }
+
+      const raw = localStorage.getItem('pdv-auth')
+      let refreshToken: string | null = null
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as { state?: { refreshToken?: string } }
+          refreshToken = parsed?.state?.refreshToken ?? null
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!refreshToken) {
         localStorage.removeItem('pdv-auth')
         window.location.href = '/login'
+        return Promise.reject(error)
+      }
+
+      if (isRefreshing) {
+        return new Promise<string>((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`
+          return api(originalRequest)
+        }).catch((err) => Promise.reject(err))
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        const res = await axios.post<{ data: { accessToken: string } }>(
+          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/auth/refresh`,
+          { refreshToken }
+        )
+        const newToken = res.data.data.accessToken
+
+        // Update localStorage directly
+        const raw2 = localStorage.getItem('pdv-auth')
+        if (raw2) {
+          try {
+            const parsed = JSON.parse(raw2) as { state?: Record<string, unknown>; version?: number }
+            if (parsed.state) {
+              parsed.state.token = newToken
+              localStorage.setItem('pdv-auth', JSON.stringify(parsed))
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        processQueue(null, newToken)
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api(originalRequest)
+      } catch (refreshError) {
+        processQueue(refreshError, null)
+        localStorage.removeItem('pdv-auth')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
+
     return Promise.reject(error)
   }
 )

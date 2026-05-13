@@ -7,6 +7,8 @@ export interface CartItem {
   price: number
   unitType: string
   quantity: number
+  stock: number
+  stockEnabled: boolean
 }
 
 interface CartStore {
@@ -42,6 +44,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
             price: product.price,
             unitType: product.unitType,
             quantity: 1,
+            stock: product.stock,
+            stockEnabled: true,
           },
         ],
       })

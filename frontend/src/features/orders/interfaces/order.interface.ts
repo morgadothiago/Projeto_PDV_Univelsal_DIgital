@@ -25,7 +25,17 @@ export interface IOrder {
   orderId: string
   total: number
   paymentMethod: string
+  status?: string
   pixQrCode?: string
   items: IOrderItem[]
   createdAt: string
+}
+
+export interface IOrderListResponse {
+  data: IOrder[]
+  meta: {
+    page: number
+    total: number
+    limit: number
+  }
 }

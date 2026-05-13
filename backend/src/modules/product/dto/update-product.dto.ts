@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsBoolean,
   Min,
+  MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -25,6 +26,12 @@ export class UpdateProductDto {
   @IsIn(['unit', 'weight', 'digital'])
   @IsOptional()
   unitType?: string;
+
+  @ApiPropertyOptional({ example: 'm³', description: 'Unidade customizada (ex: m, m², m³, L, saco, barra)' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  customUnit?: string;
 
   @ApiPropertyOptional({ example: 'uuid-da-categoria', description: 'ID da categoria' })
   @IsUUID()

@@ -76,7 +76,7 @@ function StockItemCard({ product }: StockItemCardProps) {
       </div>
       <div className="flex flex-col items-end flex-shrink-0" style={{ gap: '4px' }}>
         <span className="font-bold" style={{ fontSize: '14px', color: style.valueColor }}>
-          {product.stock} un.
+          {product.stock} {product.customUnit || (product.unitType === 'weight' ? 'kg' : 'un')}
         </span>
         <span
           className="font-semibold"

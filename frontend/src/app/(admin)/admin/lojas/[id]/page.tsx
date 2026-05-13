@@ -15,14 +15,15 @@ import {
 import { AdminTopBar } from '@/features/admin/components/AdminTopBar'
 import { PlanBadge } from '@/features/admin/components/PlanBadge'
 import { StatusBadge } from '@/features/admin/components/StatusBadge'
-import { useTenantDetail } from '@/features/admin/hooks/useTenantDetail'
+import { useTenantDetail, useTenantSummary } from '@/features/admin/hooks/useTenantDetail'
 import { TENANT_TYPE_LABELS } from '@/features/admin/interfaces/admin.interface'
 
 interface PageProps {
   params: Promise<{ id: string }>
 }
 
-function getInitials(name: string): string {
+function getInitials(name?: string | null): string {
+  if (!name) return '?'
   return name
     .split(' ')
     .slice(0, 2)
@@ -34,6 +35,11 @@ function getInitials(name: string): string {
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR')
 }
+
+function fmtCurrency(value: string | number): string {
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 
 function SkeletonBlock({ w = '80%', h = 16 }: { w?: string; h?: number }) {
   return (
@@ -48,21 +54,10 @@ function SkeletonBlock({ w = '80%', h = 16 }: { w?: string; h?: number }) {
   )
 }
 
-const MOCK_ORDERS = [
-  { id: '#2041', cashier: 'Maria Souza', total: 'R$ 127,50', status: 'active', date: '12/05/2026' },
-  { id: '#2040', cashier: 'Carlos Lima', total: 'R$ 89,00', status: 'pending', date: '12/05/2026' },
-  { id: '#2039', cashier: 'Ana Pereira', total: 'R$ 215,00', status: 'active', date: '11/05/2026' },
-]
-
-const MOCK_ALERTS = [
-  { name: 'Farinha de Trigo', stock: '3 unidades', level: 'critical' },
-  { name: 'Manteiga', stock: '7 unidades', level: 'low' },
-  { name: 'Açúcar Refinado', stock: '12 unidades', level: 'low' },
-]
-
 export default function TenantDetailPage({ params }: PageProps) {
   const { id } = use(params)
   const { data: tenant, isLoading } = useTenantDetail(id)
+  const { data: summary, isLoading: summaryLoading } = useTenantSummary(id)
 
   const initials = tenant ? getInitials(tenant.name) : '??'
   const tenantStatus = tenant?.isActive ? 'active' : 'suspended'
@@ -226,28 +221,28 @@ export default function TenantDetailPage({ params }: PageProps) {
               icon: TrendingUp,
               iconBg: '#F0FDF4',
               iconColor: '#16A34A',
-              value: 'R$ 34.210',
+              value: summaryLoading ? '...' : fmtCurrency(summary?.metrics.totalRevenue ?? '0'),
               label: 'Total de Vendas',
             },
             {
               icon: ShoppingCart,
               iconBg: '#EFF6FF',
               iconColor: '#2563EB',
-              value: '1.284',
+              value: summaryLoading ? '...' : String(summary?.metrics.totalOrders ?? 0),
               label: 'Pedidos Totais',
             },
             {
               icon: Package,
               iconBg: '#FDF4FF',
               iconColor: '#7C3AED',
-              value: '—',
+              value: summaryLoading ? '...' : String(summary?.metrics.totalProducts ?? 0),
               label: 'Produtos Cadastrados',
             },
             {
               icon: Users,
               iconBg: '#FFF7ED',
               iconColor: '#EA580C',
-              value: '—',
+              value: summaryLoading ? '...' : String(summary?.metrics.activeCashiers ?? 0),
               label: 'Caixeiros Ativos',
             },
           ].map((stat) => (
@@ -358,28 +353,43 @@ export default function TenantDetailPage({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_ORDERS.map((order) => (
-                  <tr
-                    key={order.id}
-                    style={{ height: '48px', borderBottom: '1px solid #F1F5F9' }}
-                  >
-                    <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '100px' }}>
-                      {order.id}
-                    </td>
-                    <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '160px' }}>
-                      {order.cashier}
-                    </td>
-                    <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '120px' }}>
-                      {order.total}
-                    </td>
-                    <td style={{ padding: '0 20px', width: '100px' }}>
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td style={{ padding: '0 20px', fontSize: '13px', color: '#64748B', fontFamily: 'Inter, sans-serif', width: '120px' }}>
-                      {order.date}
+                {summaryLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} style={{ height: '48px', borderBottom: '1px solid #F1F5F9' }}>
+                      {Array.from({ length: 5 }).map((__, j) => (
+                        <td key={j} style={{ padding: '0 20px' }}>
+                          <div style={{ height: '14px', borderRadius: '4px', backgroundColor: '#F1F5F9', width: '80%' }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (summary?.recentOrders ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '24px 20px', textAlign: 'center', fontSize: '13px', color: '#94A3B8' }}>
+                      Nenhum pedido encontrado
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  (summary?.recentOrders ?? []).map((order) => (
+                    <tr key={order.id} style={{ height: '48px', borderBottom: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '120px' }}>
+                        #{order.id.slice(-6).toUpperCase()}
+                      </td>
+                      <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '160px' }}>
+                        {order.cashierName}
+                      </td>
+                      <td style={{ padding: '0 20px', fontSize: '13px', color: '#0F172A', fontFamily: 'Inter, sans-serif', width: '120px' }}>
+                        {fmtCurrency(order.total)}
+                      </td>
+                      <td style={{ padding: '0 20px', width: '120px' }}>
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td style={{ padding: '0 20px', fontSize: '13px', color: '#64748B', fontFamily: 'Inter, sans-serif', width: '120px' }}>
+                        {formatDate(order.createdAt)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -417,54 +427,54 @@ export default function TenantDetailPage({ params }: PageProps) {
               </span>
             </div>
             <div className="flex flex-col">
-              {MOCK_ALERTS.map((alert) => (
-                <div
-                  key={alert.name}
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '12px 20px',
-                    borderBottom: '1px solid #F1F5F9',
-                  }}
-                >
-                  <div className="flex flex-col">
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#0F172A',
-                        fontFamily: 'Inter, sans-serif',
-                      }}
-                    >
-                      {alert.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        color: alert.level === 'critical' ? '#DC2626' : '#D97706',
-                        fontFamily: 'Inter, sans-serif',
-                      }}
-                    >
-                      Estoque: {alert.stock}
-                    </span>
+              {summaryLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} style={{ padding: '12px 20px', borderBottom: '1px solid #F1F5F9' }}>
+                    <div style={{ height: '13px', borderRadius: '4px', backgroundColor: '#F1F5F9', width: '70%', marginBottom: '6px' }} />
+                    <div style={{ height: '12px', borderRadius: '4px', backgroundColor: '#F1F5F9', width: '40%' }} />
                   </div>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      backgroundColor: alert.level === 'critical' ? '#FEF2F2' : '#FEF3C7',
-                      color: alert.level === 'critical' ? '#DC2626' : '#D97706',
-                      borderRadius: '11px',
-                      height: '22px',
-                      padding: '0 10px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    {alert.level === 'critical' ? 'Crítico' : 'Baixo'}
-                  </span>
+                ))
+              ) : (summary?.lowStockProducts ?? []).length === 0 ? (
+                <div style={{ padding: '24px 20px', textAlign: 'center', fontSize: '13px', color: '#94A3B8' }}>
+                  Nenhum alerta de estoque
                 </div>
-              ))}
+              ) : (
+                (summary?.lowStockProducts ?? []).map((product) => {
+                  const isCritical = Number(product.stock) === 0
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between"
+                      style={{ padding: '12px 20px', borderBottom: '1px solid #F1F5F9' }}
+                    >
+                      <div className="flex flex-col">
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#0F172A', fontFamily: 'Inter, sans-serif' }}>
+                          {product.name}
+                        </span>
+                        <span style={{ fontSize: '12px', color: isCritical ? '#DC2626' : '#D97706', fontFamily: 'Inter, sans-serif' }}>
+                          Estoque: {product.stock} / mín. {product.stockThreshold}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          backgroundColor: isCritical ? '#FEF2F2' : '#FEF3C7',
+                          color: isCritical ? '#DC2626' : '#D97706',
+                          borderRadius: '11px',
+                          height: '22px',
+                          padding: '0 10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          fontFamily: 'Inter, sans-serif',
+                        }}
+                      >
+                        {isCritical ? 'Crítico' : 'Baixo'}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
         </div>

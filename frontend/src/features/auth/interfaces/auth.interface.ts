@@ -15,5 +15,6 @@ export interface IAuthUser {
 
 export interface ILoginResponse {
   accessToken: string
+  refreshToken: string
   user: IAuthUser
 }

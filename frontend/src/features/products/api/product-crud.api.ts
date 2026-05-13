@@ -5,11 +5,11 @@ import type { IProduct } from '../interfaces/product.interface'
 export interface ICreateProductDto {
   name: string
   price: number
-  categoryId: string
-  type: 'unit' | 'weight' | 'digital'
-  stockEnabled: boolean
-  lowStockThreshold: number
-  isActive: boolean
+  categoryId?: string
+  unitType: 'unit' | 'weight' | 'digital'
+  stockThreshold?: number
+  isActive?: boolean
+  customUnit?: string
 }
 
 export interface IUpdateProductDto extends Partial<ICreateProductDto> {}
