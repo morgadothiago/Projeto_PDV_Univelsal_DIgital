@@ -35,8 +35,14 @@ async function bootstrap(): Promise<void> {
     origin: process.env['FRONTEND_URL'] ?? '*',
   });
 
+  // Health check — used by Fly.io TCP/HTTP checks
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/api/v1/health', (_req: unknown, res: { json: (body: unknown) => void }) => {
+    res.json({ status: 'ok' });
+  });
+
   const port = process.env['PORT'] ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`PDV Universal Backend running on port ${port}`);
 }
