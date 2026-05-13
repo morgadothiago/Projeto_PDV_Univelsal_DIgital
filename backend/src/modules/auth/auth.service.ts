@@ -150,7 +150,7 @@ export class AuthService {
         const { Resend } = await import('resend');
         const resend = new Resend(resendKey);
         await resend.emails.send({
-          from: 'PDV Universal <noreply@pdvuniversal.com.br>',
+          from: 'PDV Universal <onboarding@resend.dev>',
           to: email,
           subject: 'Recuperação de senha — PDV Universal',
           html: `<p>Clique no link para redefinir sua senha:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Link válido por 1 hora.</p>`,
