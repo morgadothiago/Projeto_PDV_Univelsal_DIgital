@@ -1,0 +1,86 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`KPICardDesktop matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-col bg-white rounded-[12px] border shadow-sm"
+    style="border-color: rgb(226, 232, 240); padding: 20px; gap: 8px;"
+  >
+    <div
+      class="flex items-center justify-between"
+    >
+      <span
+        style="font-size: 13px; color: rgb(100, 116, 139); font-family: Inter, sans-serif;"
+      >
+        Faturamento
+      </span>
+      <div
+        class="flex items-center justify-center flex-shrink-0"
+        style="width: 36px; height: 36px; border-radius: 8px; background-color: rgb(240, 253, 244);"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-dollar-sign"
+          fill="none"
+          height="18"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: rgb(22, 163, 74);"
+          viewBox="0 0 24 24"
+          width="18"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <line
+            x1="12"
+            x2="12"
+            y1="2"
+            y2="22"
+          />
+          <path
+            d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+          />
+        </svg>
+      </div>
+    </div>
+    <span
+      class="font-bold leading-tight"
+      style="font-size: 32px; color: rgb(15, 23, 42); font-family: Inter, sans-serif;"
+    >
+      R$ 1.250
+    </span>
+    <div
+      class="flex items-center gap-1"
+    >
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-trending-up"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        style="color: rgb(22, 163, 74);"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M16 7h6v6"
+        />
+        <path
+          d="m22 7-8.5 8.5-5-5L2 17"
+        />
+      </svg>
+      <span
+        class="font-bold"
+        style="font-size: 12px; color: rgb(22, 163, 74); font-family: Inter, sans-serif;"
+      >
+        +8%
+      </span>
+    </div>
+  </div>
+</DocumentFragment>
+`;

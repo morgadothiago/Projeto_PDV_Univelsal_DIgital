@@ -1,0 +1,17 @@
+.claude
+docs
+.DS_Store
+
+# env — nunca commitar
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# deps
+backend/node_modules/
+frontend/node_modules/
+frontend/.next/
+
+# build
+backend/dist/
+backend/coverage/
