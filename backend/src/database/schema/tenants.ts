@@ -6,6 +6,7 @@ import { products } from './products';
 import { orders } from './orders';
 import { payments } from './payments';
 import { stockEntries } from './stock-entries';
+import { subscriptions } from './subscriptions';
 
 export const tenants = pgTable('tenants', {
   id: text('id').primaryKey(),
@@ -26,6 +27,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   orders: many(orders),
   payments: many(payments),
   stockEntries: many(stockEntries),
+  subscriptions: many(subscriptions),
 }));
 
 export type Tenant = typeof tenants.$inferSelect;
