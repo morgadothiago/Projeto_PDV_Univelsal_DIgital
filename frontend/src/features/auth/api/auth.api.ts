@@ -7,4 +7,23 @@ export const authApi = {
     const res = await api.post<ApiResponse<ILoginResponse>>('/auth/login', data)
     return res.data.data
   },
+
+  register: async (data: {
+    storeName: string
+    storeType: string
+    ownerName: string
+    email: string
+    password: string
+  }): Promise<ILoginResponse> => {
+    const res = await api.post<ApiResponse<ILoginResponse>>('/auth/register', data)
+    return res.data.data
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post('/auth/forgot-password', { email })
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<void> => {
+    await api.post('/auth/reset-password', { token, newPassword })
+  },
 }

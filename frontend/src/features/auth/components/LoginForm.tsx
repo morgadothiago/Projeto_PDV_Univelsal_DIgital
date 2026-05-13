@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -100,12 +101,12 @@ export function LoginForm() {
 
         {/* Forgot password */}
         <div className="flex justify-end">
-          <button
-            type="button"
+          <Link
+            href="/esqueci-senha"
             className="text-[13px] text-[#2563EB] hover:underline"
           >
             Esqueceu a senha?
-          </button>
+          </Link>
         </div>
 
         {/* API error */}
@@ -131,6 +132,13 @@ export function LoginForm() {
             'Entrar'
           )}
         </button>
+
+        <Link
+          href="/cadastrar"
+          className="text-center text-[13px] text-[#64748B] hover:text-[#2563EB] transition-colors"
+        >
+          Não tem conta? <span className="font-semibold text-[#2563EB]">Cadastre sua loja grátis</span>
+        </Link>
       </div>
     </form>
   )

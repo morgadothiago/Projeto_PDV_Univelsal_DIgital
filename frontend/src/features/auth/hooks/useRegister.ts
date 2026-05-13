@@ -3,24 +3,29 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { authApi } from '../api/auth.api'
-import { tenantApi } from '../api/tenant.api'
-import { useAuthStore } from '../store/auth.store'
-import { useTenantStore } from '@/store/useTenantStore'
-import type { LoginFormData } from '../schemas/login.schema'
 import type { AxiosError } from 'axios'
+import { authApi } from '../api/auth.api'
+import { useAuthStore } from '../store/auth.store'
+import { tenantApi } from '../api/tenant.api'
+import { useTenantStore } from '@/store/useTenantStore'
 
-export function useLogin() {
+export function useRegister() {
   const { setAuth, setRefreshToken } = useAuthStore()
   const router = useRouter()
 
   return useMutation({
-    mutationFn: (data: LoginFormData) => authApi.login(data),
+    mutationFn: (data: {
+      storeName: string
+      storeType: string
+      ownerName: string
+      email: string
+      password: string
+    }) => authApi.register(data),
     onSuccess: ({ accessToken, refreshToken, user }) => {
       setAuth(accessToken, user)
       setRefreshToken(refreshToken)
-      toast.success('Login realizado com sucesso!')
-      // Apply tenant theme non-critically
+      toast.success('Loja criada com sucesso!')
+      // Fetch tenant settings non-critically
       if (user.tenantId) {
         tenantApi.getMyTenant().then((tenant) => {
           if (tenant.settings) {
@@ -28,12 +33,10 @@ export function useLogin() {
           }
         }).catch(() => {})
       }
-      if (user.role === 'super_admin') router.push('/admin')
-      else if (user.role === 'store_owner') router.push('/dashboard')
-      else router.push('/pdv')
+      router.push('/dashboard')
     },
     onError: (error: AxiosError<{ message?: string }>) => {
-      toast.error(error?.response?.data?.message ?? 'Email ou senha inválidos')
+      toast.error(error?.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.')
     },
   })
 }

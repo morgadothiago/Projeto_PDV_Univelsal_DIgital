@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { TenantRepository } from './tenant.repository';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { UpdateTenantSettingsDto } from './dto/update-tenant-settings.dto';
 import { TenantResponseDto } from './dto/tenant-response.dto';
 import { Tenant } from '../../database/schema/tenants';
 import { DbService } from '../../database/db.service';
@@ -111,6 +112,26 @@ export class TenantService {
     }
 
     return this.mapToResponseDto(updated);
+  }
+
+  async getMyTenant(tenantId: string): Promise<TenantResponseDto> {
+    const tenant = await this.tenantRepository.findById(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found`);
+    }
+    return this.mapToResponseDto(tenant);
+  }
+
+  async updateMySettings(tenantId: string, dto: UpdateTenantSettingsDto): Promise<TenantResponseDto> {
+    const tenant = await this.tenantRepository.findById(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found`);
+    }
+    const currentSettings = (tenant.settings as Record<string, unknown>) ?? {};
+    const updated = await this.tenantRepository.update(tenantId, {
+      settings: { ...currentSettings, ...dto },
+    });
+    return this.mapToResponseDto(updated!);
   }
 
   async softDelete(id: string): Promise<TenantResponseDto> {

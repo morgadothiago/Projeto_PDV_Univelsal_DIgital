@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tenants } from './tenants';
 import { orders } from './orders';
@@ -12,6 +12,8 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   role: text('role').notNull(),
   isActive: boolean('is_active').notNull().default(true),
+  passwordResetToken: varchar('password_reset_token', { length: 64 }),
+  passwordResetExpiresAt: timestamp('password_reset_expires_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
