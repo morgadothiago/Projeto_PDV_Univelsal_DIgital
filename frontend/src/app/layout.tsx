@@ -14,8 +14,18 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'PDV Universal',
-  description: 'Sistema de ponto de venda multi-tenant',
+  title: {
+    default: 'PDV Universal — Sistema de Ponto de Venda',
+    template: '%s | PDV Universal',
+  },
+  description:
+    'Sistema completo de PDV para seu negócio. Controle vendas, estoque e relatórios em tempo real.',
+  applicationName: 'PDV Universal',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'PDV Universal',
+  },
 }
 
 export default function RootLayout({
