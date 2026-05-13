@@ -10,6 +10,7 @@ import {
   Plus,
   Banknote,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useOrderStore } from '@/features/orders/store/order.store'
 import { useCartStore } from '@/features/orders/store/cart.store'
 
@@ -33,6 +34,42 @@ export default function ReciboPage() {
     clearCart()
     clearOrder()
     router.push('/pdv')
+  }
+
+  function handlePrint() {
+    window.print()
+  }
+
+  function handleCopy() {
+    if (!lastOrder) return
+    const orderShortFull = lastOrder.orderId.slice(-8).toUpperCase()
+    const orderDateCopy = new Date(lastOrder.createdAt)
+    const dateStrCopy = orderDateCopy.toLocaleDateString('pt-BR')
+    const timeStrCopy = orderDateCopy.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const paymentLabelCopy = PAYMENT_LABEL[lastOrder.paymentMethod] ?? lastOrder.paymentMethod
+    const text = [
+      '=== PDV UNIVERSAL ===',
+      `Pedido: #${orderShortFull}`,
+      `Data: ${dateStrCopy} ${timeStrCopy}`,
+      '---------------------',
+      ...lastOrder.items.map(
+        (i) => `${i.name} x${i.quantity}  ${fmt(i.price * i.quantity)}`
+      ),
+      '---------------------',
+      `TOTAL: ${fmt(lastOrder.total)}`,
+      `Pagamento: ${paymentLabelCopy}`,
+      '=====================',
+      'Obrigado pela preferência!',
+    ].join('\n')
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Recibo copiado!')
+    }).catch(() => {
+      toast.error('Não foi possível copiar')
+    })
   }
 
   if (!lastOrder) {
@@ -143,8 +180,9 @@ export default function ReciboPage() {
         </div>
 
         {/* Action row */}
-        <div className="flex gap-2.5">
+        <div className="no-print flex gap-2.5">
           <button
+            onClick={handlePrint}
             className="flex flex-1 h-12 items-center justify-center gap-2 rounded-[10px] border border-[#E2E8F0] bg-white text-[14px] font-medium text-[#0F172A]"
             aria-label="Imprimir recibo"
           >
@@ -152,6 +190,7 @@ export default function ReciboPage() {
             Imprimir
           </button>
           <button
+            onClick={handleCopy}
             className="flex flex-1 h-12 items-center justify-center gap-2 rounded-[10px] border border-[#E2E8F0] bg-white text-[14px] font-medium text-[#0F172A]"
             aria-label="Copiar recibo"
           >
@@ -163,11 +202,38 @@ export default function ReciboPage() {
         {/* New sale button */}
         <button
           onClick={handleNewSale}
-          className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#2563EB] text-[15px] font-bold text-white"
+          className="no-print flex h-14 items-center justify-center gap-2 rounded-xl bg-[#2563EB] text-[15px] font-bold text-white"
         >
           <Plus size={20} aria-hidden />
           Nova Venda
         </button>
+
+        {/* Thermal receipt — only visible when printing */}
+        <div id="receipt-thermal" className="hidden" aria-hidden="true">
+          <p style={{ textAlign: 'center', fontWeight: 'bold' }}>=== PDV UNIVERSAL ===</p>
+          <p style={{ textAlign: 'center' }}>Minha Loja</p>
+          <p>{'─'.repeat(32)}</p>
+          <p>Pedido: #{lastOrder.orderId.slice(-8).toUpperCase()}</p>
+          <p>Data: {dateStr} {timeStr}</p>
+          <p>{'─'.repeat(32)}</p>
+          {lastOrder.items.map((item, idx) => (
+            <div key={idx}>
+              <p>{item.name}</p>
+              <p style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>  {item.quantity}x {fmt(item.price)}</span>
+                <span>{fmt(item.price * item.quantity)}</span>
+              </p>
+            </div>
+          ))}
+          <p>{'─'.repeat(32)}</p>
+          <p style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+            <span>TOTAL</span>
+            <span>{fmt(lastOrder.total)}</span>
+          </p>
+          <p>Pagamento: {paymentLabel}</p>
+          <p>{'─'.repeat(32)}</p>
+          <p style={{ textAlign: 'center' }}>Obrigado pela preferência!</p>
+        </div>
       </div>
     </div>
   )
