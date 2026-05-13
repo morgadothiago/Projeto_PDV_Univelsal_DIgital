@@ -12,12 +12,14 @@ import { ProductGrid } from '@/features/products/components/ProductGrid'
 import { CartFAB } from '@/features/orders/components/CartFAB'
 import { CartPanel } from '@/features/orders/components/CartPanel'
 import { Sidebar } from '@/components/shared/Sidebar'
+import { useRealtimeStock } from '@/hooks/useRealtimeStock'
 import type { IProduct } from '@/features/products/interfaces/product.interface'
 
 const TODAY = new Date().toLocaleDateString('pt-BR')
 
 export default function PdvPage() {
   const { user } = useAuthStore()
+  useRealtimeStock()
   const addItem = useCartStore((s) => s.addItem)
 
   const [search, setSearch] = useState('')
