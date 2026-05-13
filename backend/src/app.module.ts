@@ -14,6 +14,7 @@ import { ReportModule } from './modules/report/report.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { BillingModule } from './modules/billing/billing.module';
     NotificationModule,
     AdminModule,
     BillingModule,
+    EventsModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,7 @@ import { tenants } from '../../database/schema/tenants';
 import { OrderRepository } from './order.repository';
 import { PaymentService } from '../payment/payment.service';
 import { NotificationService } from '../notification/notification.service';
+import { EventsGateway } from '../events/events.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import {
@@ -46,6 +47,7 @@ export class OrderService {
     private readonly paymentService: PaymentService,
     private readonly dbService: DbService,
     private readonly notificationService: NotificationService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async createOrder(
@@ -126,6 +128,23 @@ export class OrderService {
           createdAt: now,
         },
       });
+
+    // Emit real-time events to all cashier terminals in the same tenant
+    for (const item of dto.items) {
+      const product = productMap.get(item.productId)!;
+      const newStock = Math.max(0, Number(product.stock) - item.quantity);
+      this.eventsGateway.emitStockUpdate(tenantId, {
+        productId: item.productId,
+        newStock,
+        productName: product.name,
+      });
+    }
+
+    this.eventsGateway.emitNewOrder(tenantId, {
+      orderId,
+      total,
+      cashierName: '',
+    });
 
     let pixQrCode: string | null = null;
     let pixQrCodeBase64: string | null = null;
