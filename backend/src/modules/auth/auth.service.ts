@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { DbService } from '../../database/db.service';
 import { users } from '../../database/schema/users';
 import { eq } from 'drizzle-orm';
