@@ -19,8 +19,11 @@ export const adminApi = {
     limit?: number
     search?: string
   }): Promise<ITenantsResponse> => {
-    const res = await api.get<ApiResponse<ITenantsResponse>>('/tenants', { params })
-    return res.data.data
+    const res = await api.get<ApiResponse<ITenant[]> & { meta?: ITenantsResponse['meta'] }>('/tenants', { params })
+    return {
+      data: res.data.data,
+      meta: res.data.meta ?? { page: 1, total: (res.data.data as ITenant[]).length, limit: 20 },
+    }
   },
 
   getTenantById: async (id: string): Promise<ITenant> => {
