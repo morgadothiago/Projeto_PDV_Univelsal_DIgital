@@ -71,7 +71,7 @@ export class BillingService {
       const mpToken = this.configService.get<string>('MP_ACCESS_TOKEN');
 
       if (!mpToken) {
-        console.log('[Billing] MP_ACCESS_TOKEN not configured — using mock upgrade');
+        this.logger.warn('[Billing] MP_ACCESS_TOKEN not configured — using mock upgrade');
       } else {
         // TODO: create MercadoPago subscription here
         // const mp = new MercadoPagoConfig({ accessToken: mpToken });

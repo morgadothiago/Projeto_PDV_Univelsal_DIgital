@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
@@ -14,6 +14,7 @@ export interface SendReceiptEmailParams {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
   private resend: Resend | null = null;
   private readonly fromEmail: string;
 
@@ -89,7 +90,7 @@ export class NotificationService {
 </html>`;
 
     if (!this.resend) {
-      console.warn(`[NotificationService] RESEND_API_KEY not configured — skipping email to ${customerEmail}`);
+      this.logger.warn(`RESEND_API_KEY not configured — skipping receipt email to ${customerEmail}`);
       return;
     }
     try {
@@ -100,7 +101,7 @@ export class NotificationService {
         html,
       });
     } catch (error) {
-      console.error(`[NotificationService] Failed to send receipt email to ${customerEmail}:`, error);
+      this.logger.error(`Failed to send receipt email to ${customerEmail}`, error);
     }
   }
 
