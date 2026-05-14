@@ -133,7 +133,7 @@ export class OrderService {
         },
       });
 
-    // Emit real-time events to all cashier terminals in the same tenant
+    // DB insert confirmed — emit real-time events to all cashier terminals in the same tenant
     for (const item of dto.items) {
       const product = productMap.get(item.productId)!;
       const newStock = Math.max(0, Number(product.stock) - item.quantity);
@@ -154,12 +154,20 @@ export class OrderService {
     let pixQrCodeBase64: string | null = null;
 
     if (dto.paymentMethod === 'pix') {
-      const pixResult = await this.paymentService.generatePixQrCode(
-        order.id,
-        Number(order.total),
-        tenantId,
-        dto.customerEmail,
-      );
+      let pixResult: Awaited<ReturnType<typeof this.paymentService.generatePixQrCode>>;
+      try {
+        pixResult = await this.paymentService.generatePixQrCode(
+          order.id,
+          Number(order.total),
+          tenantId,
+          dto.customerEmail,
+        );
+      } catch (err) {
+        // PIX QR generation failed after the order was already persisted.
+        // Delete the orphaned order and re-throw with a clear user-facing message.
+        await this.orderRepository.rollbackCreatedOrder(order.id);
+        throw err;
+      }
       pixQrCode = pixResult.pixQrCode;
       pixQrCodeBase64 = pixResult.pixQrCodeBase64;
 

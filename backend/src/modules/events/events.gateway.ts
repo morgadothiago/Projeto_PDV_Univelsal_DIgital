@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: process.env['FRONTEND_URL'] ?? 'http://localhost:3000' },
   namespace: '/events',
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

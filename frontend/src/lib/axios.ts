@@ -1,7 +1,10 @@
 import axios from 'axios'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+if (!API_URL) throw new Error('NEXT_PUBLIC_API_URL is required')
+
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1',
+  baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -81,7 +84,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post<{ data: { accessToken: string } }>(
-          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/auth/refresh`,
+          `${API_URL}/auth/refresh`,
           { refreshToken }
         )
         const newToken = res.data.data.accessToken

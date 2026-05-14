@@ -186,7 +186,7 @@ export default function CheckoutPage() {
 
   async function handleCancelConfirm() {
     if (pixQrData?.orderId) {
-      try { await orderApi.cancel(pixQrData.orderId) } catch { /* ignora */ }
+      try { await orderApi.cancel(pixQrData.orderId) } catch { toast.error('Erro ao cancelar pedido') }
     }
     clearCart()
     setShowCancelModal(false)
@@ -347,6 +347,7 @@ export default function CheckoutPage() {
                 onClick={handleFinish}
                 disabled={!canFinish}
                 aria-label="Finalizar venda"
+                aria-busy={isPending}
                 className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#16A34A] text-[15px] font-bold text-white transition-opacity disabled:opacity-40"
               >
                 <Check size={22} aria-hidden />
@@ -440,6 +441,7 @@ export default function CheckoutPage() {
             <button
               onClick={handleFinish}
               disabled={!canFinish}
+              aria-busy={isPending}
               className="flex h-14 items-center justify-center gap-2.5 rounded-[10px] bg-[#16A34A] text-[15px] font-bold text-white transition-opacity disabled:opacity-40"
             >
               <Check size={20} aria-hidden />

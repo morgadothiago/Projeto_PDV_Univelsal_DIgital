@@ -24,7 +24,7 @@ export class NotificationService {
     }
     this.fromEmail =
       this.configService.get<string>('FROM_EMAIL') ??
-      'PDV Universal <noreply@pdvuniversal.com>';
+      'PDV Universal <onboarding@resend.dev>';
   }
 
   async sendReceiptEmail(params: SendReceiptEmailParams): Promise<void> {

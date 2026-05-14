@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const { data: kpis, isLoading: kpisLoading } = useKPIs()
   const { data: weeklyData, isLoading: weeklyLoading } = useWeeklyChart()
   const { data: topProducts, isLoading: topLoading } = useTopProducts()
-  const { data: usage } = usePlanUsage()
+  const { data: usage } = usePlanUsage(!!user?.tenantId)
 
   const userName = user?.name?.split(' ')[0] ?? 'Usuário'
   const dateString = getDateString()

@@ -35,8 +35,13 @@ export class WebhookService {
   ): boolean {
     const secret = this.configService.get<string>('MP_WEBHOOK_SECRET');
     if (!secret) {
-      this.logger.warn('MP_WEBHOOK_SECRET not configured — skipping signature validation');
-      return true;
+      // Only bypass signature validation in explicit test environments.
+      // In all other environments reject the webhook to prevent spoofing.
+      if (process.env['NODE_ENV'] === 'test') {
+        return true;
+      }
+      this.logger.warn('MP_WEBHOOK_SECRET not configured — rejecting webhook to prevent spoofing');
+      return false;
     }
 
     const parts = xSignature.split(',');
@@ -172,6 +177,7 @@ export class WebhookService {
       .where(eq(payments.id, payment.id));
 
     if (tenant?.stockEnabled) {
+      const stockErrors: Array<{ productId: string; error: unknown }> = [];
       for (const item of items) {
         const productResult = await this.dbService.db
           .select({ unitType: products.unitType })
@@ -182,13 +188,28 @@ export class WebhookService {
         const unitType = productResult[0]?.unitType;
         if (unitType === 'digital') continue;
 
-        await this.dbService.db
-          .update(products)
-          .set({
-            stock: sql`${products.stock} - ${item.quantity}`,
-            updatedAt: now,
-          })
-          .where(eq(products.id, item.productId));
+        try {
+          await this.dbService.db
+            .update(products)
+            .set({
+              stock: sql`${products.stock} - ${item.quantity}`,
+              updatedAt: now,
+            })
+            .where(eq(products.id, item.productId));
+        } catch (err) {
+          // Log and continue — partial deduction is better than full failure
+          stockErrors.push({ productId: item.productId, error: err });
+          this.logger.error(
+            `Webhook: stock deduction failed for product ${item.productId} on order ${orderId} — continuing`,
+            err,
+          );
+        }
+      }
+      if (stockErrors.length > 0) {
+        this.logger.warn(
+          `Webhook: stock deduction completed with ${stockErrors.length} error(s) for order ${orderId}. ` +
+          `Failed product IDs: ${stockErrors.map((e) => e.productId).join(', ')}`,
+        );
       }
     }
 

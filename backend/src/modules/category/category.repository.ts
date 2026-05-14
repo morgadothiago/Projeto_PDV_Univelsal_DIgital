@@ -15,11 +15,11 @@ export class CategoryRepository {
       .orderBy(categories.name);
   }
 
-  async findById(id: string): Promise<Category | undefined> {
+  async findById(id: string, tenantId: string): Promise<Category | undefined> {
     const result = await this.dbService.db
       .select()
       .from(categories)
-      .where(eq(categories.id, id))
+      .where(and(eq(categories.id, id), eq(categories.tenantId, tenantId)))
       .limit(1);
     return result[0];
   }

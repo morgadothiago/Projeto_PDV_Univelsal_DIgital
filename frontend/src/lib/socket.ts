@@ -5,10 +5,7 @@ let socket: Socket | null = null
 export function getSocket(token: string): Socket {
   if (socket?.connected) return socket
 
-  const wsUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1').replace(
-    '/api/v1',
-    '',
-  )
+  const wsUrl = new URL(process.env.NEXT_PUBLIC_API_URL!).origin
 
   socket = io(`${wsUrl}/events`, {
     auth: { token },

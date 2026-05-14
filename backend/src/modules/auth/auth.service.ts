@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { User } from '../../database/schema/users';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly dbService: DbService,
     private readonly jwtService: JwtService,
@@ -155,12 +158,12 @@ export class AuthService {
           subject: 'Recuperação de senha — PDV Universal',
           html: `<p>Clique no link para redefinir sua senha:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Link válido por 1 hora.</p>`,
         });
-        console.log('[Resend] Email sent:', JSON.stringify(result));
+        this.logger.log(`[Resend] Email sent: ${JSON.stringify(result)}`);
       } catch (err) {
-        console.error('[Resend] Failed to send reset email:', err);
+        this.logger.error('[Resend] Failed to send reset email', err);
       }
     } else {
-      console.log(`[DEV] Reset password link for ${email}: ${resetUrl}`);
+      this.logger.log(`[DEV] Reset password link for ${email}: ${resetUrl}`);
     }
   }
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { and, desc, eq, gte, lte, sql, SQL } from 'drizzle-orm';
 import { DbService } from '../../database/db.service';
 import { orders, Order, NewOrder } from '../../database/schema/orders';
@@ -34,7 +34,29 @@ export interface CreateOrderPayload {
 
 @Injectable()
 export class OrderRepository {
+  private readonly logger = new Logger(OrderRepository.name);
+
   constructor(private readonly dbService: DbService) {}
+
+  // Compensating rollback helper — deletes order and its items on failure.
+  // NeonHttpDatabase has no native transaction support, so we clean up manually.
+  // Private variant used internally; public variant exposed for service-layer PIX orphan cleanup.
+  private async rollbackOrder(orderId: string): Promise<void> {
+    await this.rollbackCreatedOrder(orderId);
+  }
+
+  async rollbackCreatedOrder(orderId: string): Promise<void> {
+    try {
+      await this.dbService.db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+    } catch (err) {
+      this.logger.error(`Rollback: failed to delete order items for order ${orderId}`, err);
+    }
+    try {
+      await this.dbService.db.delete(orders).where(eq(orders.id, orderId));
+    } catch (err) {
+      this.logger.error(`Rollback: failed to delete order ${orderId}`, err);
+    }
+  }
 
   async findById(id: string, tenantId: string): Promise<OrderWithDetails | undefined> {
     const orderResult = await this.dbService.db
@@ -140,16 +162,23 @@ export class OrderRepository {
     items: OrderItem[];
     payment: Payment;
   }> {
-    // NeonHttpDatabase doesn't support transactions — run sequentially
+    // NeonHttpDatabase doesn't support transactions — use compensating rollbacks on failure.
     const [insertedOrder] = await this.dbService.db
       .insert(orders)
       .values(payload.order)
       .returning();
 
-    const insertedItems = await this.dbService.db
-      .insert(orderItems)
-      .values(payload.items)
-      .returning();
+    let insertedItems: OrderItem[];
+    try {
+      insertedItems = (await this.dbService.db
+        .insert(orderItems)
+        .values(payload.items)
+        .returning()) as OrderItem[];
+    } catch (err) {
+      this.logger.error(`createOrder: items insert failed for order ${insertedOrder.id} — rolling back order`, err);
+      await this.rollbackOrder(insertedOrder.id);
+      throw err;
+    }
 
     const paymentValues: NewPayment = {
       ...payload.payment,
@@ -157,15 +186,22 @@ export class OrderRepository {
       externalId: payload.externalId ?? null,
     };
 
-    const [insertedPayment] = await this.dbService.db
-      .insert(payments)
-      .values(paymentValues)
-      .returning();
+    let insertedPayment: Payment;
+    try {
+      [insertedPayment] = (await this.dbService.db
+        .insert(payments)
+        .values(paymentValues)
+        .returning()) as Payment[];
+    } catch (err) {
+      this.logger.error(`createOrder: payment insert failed for order ${insertedOrder.id} — rolling back order and items`, err);
+      await this.rollbackOrder(insertedOrder.id);
+      throw err;
+    }
 
     return {
       order: insertedOrder as Order,
-      items: insertedItems as OrderItem[],
-      payment: insertedPayment as Payment,
+      items: insertedItems,
+      payment: insertedPayment,
     };
   }
 
@@ -201,15 +237,31 @@ export class OrderRepository {
       .where(eq(payments.orderId, orderId));
 
     if (restoreStock) {
+      const stockErrors: Array<{ productId: string; error: unknown }> = [];
       for (const item of items) {
         if (productUnitTypes[item.productId] === 'digital') continue;
-        await this.dbService.db
-          .update(products)
-          .set({
-            stock: sql`${products.stock} + ${item.quantity}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(products.id, item.productId));
+        try {
+          await this.dbService.db
+            .update(products)
+            .set({
+              stock: sql`${products.stock} + ${item.quantity}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(products.id, item.productId));
+        } catch (err) {
+          // Log and continue — partial restore is better than full failure
+          stockErrors.push({ productId: item.productId, error: err });
+          this.logger.error(
+            `cancelOrder: stock restore failed for product ${item.productId} on order ${orderId} — continuing`,
+            err,
+          );
+        }
+      }
+      if (stockErrors.length > 0) {
+        this.logger.warn(
+          `cancelOrder: stock restore completed with ${stockErrors.length} error(s) for order ${orderId}. ` +
+          `Failed product IDs: ${stockErrors.map((e) => e.productId).join(', ')}`,
+        );
       }
     }
 
@@ -239,15 +291,31 @@ export class OrderRepository {
       .where(eq(payments.id, paymentId));
 
     if (deductStock) {
+      const stockErrors: Array<{ productId: string; error: unknown }> = [];
       for (const item of items) {
         if (productUnitTypes[item.productId] === 'digital') continue;
-        await this.dbService.db
-          .update(products)
-          .set({
-            stock: sql`${products.stock} - ${item.quantity}`,
-            updatedAt: now,
-          })
-          .where(eq(products.id, item.productId));
+        try {
+          await this.dbService.db
+            .update(products)
+            .set({
+              stock: sql`${products.stock} - ${item.quantity}`,
+              updatedAt: now,
+            })
+            .where(eq(products.id, item.productId));
+        } catch (err) {
+          // Log and continue — partial deduction is better than full failure
+          stockErrors.push({ productId: item.productId, error: err });
+          this.logger.error(
+            `confirmCashOrder: stock deduction failed for product ${item.productId} on order ${orderId} — continuing`,
+            err,
+          );
+        }
+      }
+      if (stockErrors.length > 0) {
+        this.logger.warn(
+          `confirmCashOrder: stock deduction completed with ${stockErrors.length} error(s) for order ${orderId}. ` +
+          `Failed product IDs: ${stockErrors.map((e) => e.productId).join(', ')}`,
+        );
       }
     }
 

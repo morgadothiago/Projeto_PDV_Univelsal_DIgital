@@ -9,6 +9,10 @@ import { useTenantStore } from '@/store/useTenantStore'
 import { tenantApi } from '@/features/auth/api/tenant.api'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 
+function isValidUrl(url: string): boolean {
+  try { new URL(url); return true } catch { return false }
+}
+
 export default function ConfiguracoesPage() {
   const { primaryColor, logoUrl, setTenantSettings } = useTenantStore()
   const user = useAuthStore((s) => s.user)
@@ -159,7 +163,7 @@ export default function ConfiguracoesPage() {
                         outline: 'none',
                       }}
                     />
-                    {localLogoUrl && (
+                    {localLogoUrl && isValidUrl(localLogoUrl) && (
                       <div className="mt-1 flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img

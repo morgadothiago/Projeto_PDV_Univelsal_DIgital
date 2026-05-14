@@ -2,10 +2,23 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import { orderApi } from '../api/order.api'
 import { useOrderStore } from '../store/order.store'
 import { useCartStore } from '../store/cart.store'
 import type { ICreateOrder } from '../interfaces/order.interface'
+
+async function confirmCashWithRetry(orderId: string): Promise<void> {
+  try {
+    await orderApi.confirmCash(orderId)
+  } catch (err) {
+    // Retry once after 1s only for network errors, not 4xx client errors
+    const is4xx = axios.isAxiosError(err) && err.response && err.response.status >= 400 && err.response.status < 500
+    if (is4xx) throw err
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000))
+    await orderApi.confirmCash(orderId)
+  }
+}
 
 export function useCreateOrder() {
   const router = useRouter()
@@ -16,7 +29,7 @@ export function useCreateOrder() {
     mutationFn: async (dto: ICreateOrder) => {
       const order = await orderApi.create(dto)
       if (dto.paymentMethod !== 'pix') {
-        await orderApi.confirmCash(order.orderId)
+        await confirmCashWithRetry(order.orderId)
       }
       return order
     },

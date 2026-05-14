@@ -5,6 +5,7 @@ import type { ApiResponse } from '@/types/api.types'
 export const authApi = {
   login: async (data: ILoginRequest): Promise<ILoginResponse> => {
     const res = await api.post<ApiResponse<ILoginResponse>>('/auth/login', data)
+    if (!res.data?.data) throw new Error('Invalid response from server')
     return res.data.data
   },
 
@@ -16,6 +17,7 @@ export const authApi = {
     password: string
   }): Promise<ILoginResponse> => {
     const res = await api.post<ApiResponse<ILoginResponse>>('/auth/register', data)
+    if (!res.data?.data) throw new Error('Invalid response from server')
     return res.data.data
   },
 

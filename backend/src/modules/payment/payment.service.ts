@@ -14,7 +14,10 @@ export class PaymentService {
   private readonly mpClient: MercadoPagoConfig;
 
   constructor(private readonly configService: ConfigService) {
-    const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN') ?? 'placeholder';
+    const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN');
+    if (!accessToken || accessToken === 'placeholder') {
+      throw new Error('MP_ACCESS_TOKEN not configured — set a valid MercadoPago access token');
+    }
     this.mpClient = new MercadoPagoConfig({ accessToken });
   }
 

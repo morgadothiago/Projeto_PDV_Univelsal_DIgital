@@ -26,8 +26,8 @@ export class CategoryService {
   }
 
   async update(id: string, tenantId: string, dto: UpdateCategoryDto): Promise<Category> {
-    const existing = await this.categoryRepository.findById(id);
-    if (!existing || existing.tenantId !== tenantId) {
+    const existing = await this.categoryRepository.findById(id, tenantId);
+    if (!existing) {
       throw new NotFoundException(`Category with id ${id} not found`);
     }
 
@@ -40,8 +40,8 @@ export class CategoryService {
   }
 
   async remove(id: string, tenantId: string): Promise<Category> {
-    const existing = await this.categoryRepository.findById(id);
-    if (!existing || existing.tenantId !== tenantId) {
+    const existing = await this.categoryRepository.findById(id, tenantId);
+    if (!existing) {
       throw new NotFoundException(`Category with id ${id} not found`);
     }
 

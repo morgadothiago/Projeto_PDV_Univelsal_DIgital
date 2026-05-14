@@ -1,10 +1,12 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
+
+const logger = new Logger('Bootstrap');
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -32,7 +34,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   app.enableCors({
-    origin: process.env['FRONTEND_URL'] ?? '*',
+    origin: process.env['FRONTEND_URL'] ?? 'http://localhost:3000',
   });
 
   // Health check — used by Fly.io TCP/HTTP checks
@@ -44,7 +46,7 @@ async function bootstrap(): Promise<void> {
   const port = process.env['PORT'] ?? 3000;
   await app.listen(port, '0.0.0.0');
 
-  console.log(`PDV Universal Backend running on port ${port}`);
+  logger.log(`PDV Universal Backend running on port ${port}`);
 }
 
 void bootstrap();
