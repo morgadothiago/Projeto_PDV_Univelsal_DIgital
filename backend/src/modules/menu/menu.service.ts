@@ -7,10 +7,14 @@ import { tenants } from '../../database/schema/tenants';
 import { orders } from '../../database/schema/orders';
 import { orderItems } from '../../database/schema/order-items';
 import { CreateMenuOrderDto } from './dto/create-menu-order.dto';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class MenuService {
-  constructor(private readonly dbService: DbService) {}
+  constructor(
+    private readonly dbService: DbService,
+    private readonly eventsGateway: EventsGateway,
+  ) {}
 
   async getProducts(tenantId: string) {
     const rows = await this.dbService.db
@@ -148,8 +152,13 @@ export class MenuService {
 
     await this.dbService.db.insert(orderItems).values(itemInserts);
 
-    // 6. Return response with short display number (last 4 chars of UUID, uppercase)
+    // 6. Notify store_owner terminals via WebSocket
     const orderNumber = orderId.replace(/-/g, '').slice(-4).toUpperCase();
+    this.eventsGateway.emitNewOrder(tenantId, {
+      orderId,
+      total: Number(total.toFixed(2)),
+      cashierName: 'Cardápio Digital',
+    });
 
     return {
       id: orderId,

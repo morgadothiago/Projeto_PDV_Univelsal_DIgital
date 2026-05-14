@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { useTenantStore } from '@/store/useTenantStore'
+import { useOrderNotifications } from '@/features/orders/hooks/useOrderNotifications'
+import { useNotificationStore } from '@/features/orders/store/notificationStore'
 
 interface NavItem {
   label: string
@@ -47,10 +49,21 @@ export function DashboardSidebar() {
   const { user, clearAuth } = useAuthStore()
   const primaryColor = useTenantStore((s) => s.primaryColor)
   const logoUrl = useTenantStore((s) => s.logoUrl)
+  const newOrderCount = useNotificationStore((s) => s.newOrderCount)
+  const clearNotifications = useNotificationStore((s) => s.clear)
+
+  useOrderNotifications()
 
   useEffect(() => {
     document.documentElement.style.setProperty('--pdv-primary', primaryColor)
   }, [primaryColor])
+
+  // Clear badge when user is on /pedidos
+  useEffect(() => {
+    if (pathname.startsWith('/pedidos') && newOrderCount > 0) {
+      clearNotifications()
+    }
+  }, [pathname, newOrderCount, clearNotifications])
 
   const displayName = user?.name ?? 'Usuário'
   const initials    = getInitials(displayName)
@@ -125,10 +138,31 @@ export function DashboardSidebar() {
                   fontWeight: isActive ? 600 : 400,
                   color: isActive ? '#FFFFFF' : '#94A3B8',
                   fontFamily: 'Inter, sans-serif',
+                  flex: 1,
                 }}
               >
                 {item.label}
               </span>
+              {item.matchPrefix === '/pedidos' && newOrderCount > 0 && (
+                <span
+                  style={{
+                    minWidth: '18px',
+                    height: '18px',
+                    borderRadius: '9px',
+                    backgroundColor: '#EF4444',
+                    color: '#FFFFFF',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {newOrderCount > 9 ? '9+' : newOrderCount}
+                </span>
+              )}
             </Link>
           )
         })}
