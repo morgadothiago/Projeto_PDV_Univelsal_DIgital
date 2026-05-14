@@ -15,6 +15,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { EventsModule } from './modules/events/events.module';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventsModule } from './modules/events/events.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    SharedModule,
     DbModule,
     AuthModule,
     TenantModule,

@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useProducts } from '@/features/products/hooks/useProducts'
 import { stockApi } from '@/features/stock/api/stock.api'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
+import { usePlanUsage } from '@/features/billing/hooks/usePlanUsage'
+import { UpgradeWall } from '@/features/billing/components/UpgradeWall'
 import type { IProduct } from '@/features/products/interfaces/product.interface'
 
 type StockLevel = 'ok' | 'low' | 'critical'
@@ -229,6 +231,7 @@ function EntradaSheet({ products, onClose }: EntradaSheetProps) {
 }
 
 export default function EstoquePage() {
+  const { data: usage } = usePlanUsage()
   const [sheetOpen, setSheetOpen] = useState(false)
   const { data, isLoading } = useProducts()
   const products = data?.items ?? []
@@ -241,6 +244,12 @@ export default function EstoquePage() {
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8FAFC' }}>
       <DashboardSidebar />
 
+      {usage && usage.plan === 'free' ? (
+        <UpgradeWall
+          feature="Gestão de Estoque"
+          description="Adicione entradas de estoque, veja alertas de estoque baixo e controle seu inventário no plano Pro."
+        />
+      ) : (
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header
@@ -315,6 +324,8 @@ export default function EstoquePage() {
           )}
         </div>
       </div>
+
+      )}
 
       {sheetOpen && (
         <EntradaSheet products={products} onClose={() => setSheetOpen(false)} />

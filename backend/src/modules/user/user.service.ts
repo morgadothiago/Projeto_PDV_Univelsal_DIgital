@@ -11,6 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { JwtPayload } from '../../shared/interfaces/jwt-payload.interface';
 import { User } from '../../database/schema/users';
+import { PlanLimitsService } from '../../shared/services/plan-limits.service';
 
 export interface UserListResponse {
   data: UserResponseDto[];
@@ -23,7 +24,10 @@ export interface UserListResponse {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   async findAll(
     currentUser: JwtPayload,
@@ -70,6 +74,7 @@ export class UserService {
       if (!currentUser.tenantId) {
         throw new ForbiddenException('store_owner must have a tenant');
       }
+      await this.planLimits.checkCashierLimit(currentUser.tenantId);
     }
 
     const existing = await this.userRepository.findByEmail(dto.email);

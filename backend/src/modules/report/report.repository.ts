@@ -44,10 +44,12 @@ export class ReportRepository {
     dateTo: string,
     groupBy: GroupBy,
   ): Promise<SalesReportResult> {
+    const dateToEnd = new Date(dateTo);
+    dateToEnd.setUTCDate(dateToEnd.getUTCDate() + 1); // inclusive: end of dateTo day UTC
     const conditions = [
       inArray(orders.status, [...CONFIRMED_STATUSES]),
       gte(orders.createdAt, new Date(dateFrom)),
-      lte(orders.createdAt, new Date(dateTo)),
+      lte(orders.createdAt, dateToEnd),
     ];
 
     if (tenantId) {
@@ -98,10 +100,12 @@ export class ReportRepository {
     dateTo: string,
     limit: number,
   ): Promise<TopProductRow[]> {
+    const dateToEnd = new Date(dateTo);
+    dateToEnd.setUTCDate(dateToEnd.getUTCDate() + 1);
     const conditions = [
       inArray(orders.status, [...CONFIRMED_STATUSES]),
       gte(orders.createdAt, new Date(dateFrom)),
-      lte(orders.createdAt, new Date(dateTo)),
+      lte(orders.createdAt, dateToEnd),
     ];
 
     if (tenantId) {
@@ -135,10 +139,12 @@ export class ReportRepository {
     dateFrom: string,
     dateTo: string,
   ): Promise<PaymentMethodRow[]> {
+    const dateToEnd = new Date(dateTo);
+    dateToEnd.setUTCDate(dateToEnd.getUTCDate() + 1);
     const conditions = [
       eq(payments.status, 'confirmed'),
       gte(payments.createdAt, new Date(dateFrom)),
-      lte(payments.createdAt, new Date(dateTo)),
+      lte(payments.createdAt, dateToEnd),
     ];
 
     if (tenantId) {

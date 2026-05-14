@@ -154,44 +154,43 @@ export class WebhookService {
       .from(orderItems)
       .where(eq(orderItems.orderId, orderId));
 
+    // NeonHttpDatabase doesn't support transactions — run sequentially
     const now = new Date();
 
-    await this.dbService.db.transaction(async (tx) => {
-      await tx
-        .update(orders)
-        .set({ status: 'confirmed', confirmedAt: now, updatedAt: now })
-        .where(eq(orders.id, orderId));
+    await this.dbService.db
+      .update(orders)
+      .set({ status: 'confirmed', confirmedAt: now, updatedAt: now })
+      .where(eq(orders.id, orderId));
 
-      await tx
-        .update(payments)
-        .set({
-          status: 'confirmed',
-          confirmedAt: now,
-          externalId: mpPaymentId,
-        })
-        .where(eq(payments.id, payment.id));
+    await this.dbService.db
+      .update(payments)
+      .set({
+        status: 'confirmed',
+        confirmedAt: now,
+        externalId: mpPaymentId,
+      })
+      .where(eq(payments.id, payment.id));
 
-      if (tenant?.stockEnabled) {
-        for (const item of items) {
-          const productResult = await tx
-            .select({ unitType: products.unitType })
-            .from(products)
-            .where(eq(products.id, item.productId))
-            .limit(1);
+    if (tenant?.stockEnabled) {
+      for (const item of items) {
+        const productResult = await this.dbService.db
+          .select({ unitType: products.unitType })
+          .from(products)
+          .where(eq(products.id, item.productId))
+          .limit(1);
 
-          const unitType = productResult[0]?.unitType;
-          if (unitType === 'digital') continue;
+        const unitType = productResult[0]?.unitType;
+        if (unitType === 'digital') continue;
 
-          await tx
-            .update(products)
-            .set({
-              stock: sql`${products.stock} - ${item.quantity}`,
-              updatedAt: now,
-            })
-            .where(eq(products.id, item.productId));
-        }
+        await this.dbService.db
+          .update(products)
+          .set({
+            stock: sql`${products.stock} - ${item.quantity}`,
+            updatedAt: now,
+          })
+          .where(eq(products.id, item.productId));
       }
-    });
+    }
 
     this.logger.log(`Webhook: order ${orderId} confirmed via MP payment ${mpPaymentId}`);
 

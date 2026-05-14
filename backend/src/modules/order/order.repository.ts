@@ -140,34 +140,33 @@ export class OrderRepository {
     items: OrderItem[];
     payment: Payment;
   }> {
-    return this.dbService.db.transaction(async (tx) => {
-      const [insertedOrder] = await tx
-        .insert(orders)
-        .values(payload.order)
-        .returning();
+    // NeonHttpDatabase doesn't support transactions — run sequentially
+    const [insertedOrder] = await this.dbService.db
+      .insert(orders)
+      .values(payload.order)
+      .returning();
 
-      const insertedItems = await tx
-        .insert(orderItems)
-        .values(payload.items)
-        .returning();
+    const insertedItems = await this.dbService.db
+      .insert(orderItems)
+      .values(payload.items)
+      .returning();
 
-      const paymentValues: NewPayment = {
-        ...payload.payment,
-        pixQrCode: payload.pixQrCode ?? null,
-        externalId: payload.externalId ?? null,
-      };
+    const paymentValues: NewPayment = {
+      ...payload.payment,
+      pixQrCode: payload.pixQrCode ?? null,
+      externalId: payload.externalId ?? null,
+    };
 
-      const [insertedPayment] = await tx
-        .insert(payments)
-        .values(paymentValues)
-        .returning();
+    const [insertedPayment] = await this.dbService.db
+      .insert(payments)
+      .values(paymentValues)
+      .returning();
 
-      return {
-        order: insertedOrder as Order,
-        items: insertedItems as OrderItem[],
-        payment: insertedPayment as Payment,
-      };
-    });
+    return {
+      order: insertedOrder as Order,
+      items: insertedItems as OrderItem[],
+      payment: insertedPayment as Payment,
+    };
   }
 
   async updatePaymentPixData(
@@ -189,33 +188,32 @@ export class OrderRepository {
     items: OrderItem[],
     productUnitTypes: Record<string, string>,
   ): Promise<Order> {
-    return this.dbService.db.transaction(async (tx) => {
-      const [updatedOrder] = await tx
-        .update(orders)
-        .set({ status: 'cancelled', updatedAt: new Date() })
-        .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId)))
-        .returning();
+    // NeonHttpDatabase doesn't support transactions — run sequentially
+    const [updatedOrder] = await this.dbService.db
+      .update(orders)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId)))
+      .returning();
 
-      await tx
-        .update(payments)
-        .set({ status: 'cancelled' })
-        .where(eq(payments.orderId, orderId));
+    await this.dbService.db
+      .update(payments)
+      .set({ status: 'cancelled' })
+      .where(eq(payments.orderId, orderId));
 
-      if (restoreStock) {
-        for (const item of items) {
-          if (productUnitTypes[item.productId] === 'digital') continue;
-          await tx
-            .update(products)
-            .set({
-              stock: sql`${products.stock} + ${item.quantity}`,
-              updatedAt: new Date(),
-            })
-            .where(eq(products.id, item.productId));
-        }
+    if (restoreStock) {
+      for (const item of items) {
+        if (productUnitTypes[item.productId] === 'digital') continue;
+        await this.dbService.db
+          .update(products)
+          .set({
+            stock: sql`${products.stock} + ${item.quantity}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(products.id, item.productId));
       }
+    }
 
-      return updatedOrder as Order;
-    });
+    return updatedOrder as Order;
   }
 
   async confirmCashOrder(
@@ -226,34 +224,34 @@ export class OrderRepository {
     items: OrderItem[],
     productUnitTypes: Record<string, string>,
   ): Promise<Order> {
+    // NeonHttpDatabase doesn't support transactions — run sequentially
     const now = new Date();
-    return this.dbService.db.transaction(async (tx) => {
-      const [updatedOrder] = await tx
-        .update(orders)
-        .set({ status: 'confirmed', confirmedAt: now, updatedAt: now })
-        .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId)))
-        .returning();
 
-      await tx
-        .update(payments)
-        .set({ status: 'confirmed', confirmedAt: now })
-        .where(eq(payments.id, paymentId));
+    const [updatedOrder] = await this.dbService.db
+      .update(orders)
+      .set({ status: 'confirmed', confirmedAt: now, updatedAt: now })
+      .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId)))
+      .returning();
 
-      if (deductStock) {
-        for (const item of items) {
-          if (productUnitTypes[item.productId] === 'digital') continue;
-          await tx
-            .update(products)
-            .set({
-              stock: sql`${products.stock} - ${item.quantity}`,
-              updatedAt: now,
-            })
-            .where(eq(products.id, item.productId));
-        }
+    await this.dbService.db
+      .update(payments)
+      .set({ status: 'confirmed', confirmedAt: now })
+      .where(eq(payments.id, paymentId));
+
+    if (deductStock) {
+      for (const item of items) {
+        if (productUnitTypes[item.productId] === 'digital') continue;
+        await this.dbService.db
+          .update(products)
+          .set({
+            stock: sql`${products.stock} - ${item.quantity}`,
+            updatedAt: now,
+          })
+          .where(eq(products.id, item.productId));
       }
+    }
 
-      return updatedOrder as Order;
-    });
+    return updatedOrder as Order;
   }
 
   async findItemsByOrderId(orderId: string): Promise<OrderItem[]> {

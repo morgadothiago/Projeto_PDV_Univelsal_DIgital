@@ -14,6 +14,8 @@ import {
 } from 'recharts'
 import { reportsApi } from '@/features/reports/api/reports.api'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
+import { usePlanUsage } from '@/features/billing/hooks/usePlanUsage'
+import { UpgradeWall } from '@/features/billing/components/UpgradeWall'
 
 type FilterPeriod = 'today' | '7d' | '30d'
 
@@ -62,6 +64,7 @@ function getDateRange(filter: FilterPeriod): { dateFrom: string; dateTo: string 
 }
 
 export default function RelatoriosPage() {
+  const { data: usage } = usePlanUsage()
   const [filter, setFilter] = useState<FilterPeriod>('today')
 
   const { dateFrom, dateTo } = useMemo(() => getDateRange(filter), [filter])
@@ -93,6 +96,7 @@ export default function RelatoriosPage() {
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <header
+
           className="flex items-center bg-white flex-shrink-0"
           style={{ height: '62px', padding: '0 16px', borderBottom: '1px solid #E2E8F0' }}
         >
@@ -101,7 +105,16 @@ export default function RelatoriosPage() {
           </span>
         </header>
 
+        {/* Upgrade wall for free plan */}
+        {usage && usage.plan === 'free' && (
+          <UpgradeWall
+            feature="Relatórios"
+            description="Análise de vendas, top produtos e faturamento por período estão disponíveis apenas no plano Pro."
+          />
+        )}
+
         {/* Content */}
+        {(!usage || usage.plan === 'pro') && (
         <div className="flex-1 overflow-y-auto" style={{ backgroundColor: '#F8FAFC' }}>
           <div className="flex flex-col" style={{ gap: '14px', padding: '16px' }}>
             {/* Filter pills */}
@@ -285,6 +298,7 @@ export default function RelatoriosPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

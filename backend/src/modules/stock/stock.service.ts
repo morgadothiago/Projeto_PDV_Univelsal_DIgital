@@ -5,6 +5,7 @@ import { CreateStockEntryDto } from './dto/create-stock-entry.dto';
 import { ListStockEntriesQueryDto } from './dto/list-stock-entries-query.dto';
 import { StockEntry } from '../../database/schema/stock-entries';
 import { Product } from '../../database/schema/products';
+import { PlanLimitsService } from '../../shared/services/plan-limits.service';
 
 export interface StockEntryListResponse {
   data: StockEntry[];
@@ -13,13 +14,18 @@ export interface StockEntryListResponse {
 
 @Injectable()
 export class StockService {
-  constructor(private readonly stockRepository: StockRepository) {}
+  constructor(
+    private readonly stockRepository: StockRepository,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   async createEntry(
     tenantId: string,
     userId: string,
     dto: CreateStockEntryDto,
   ): Promise<StockEntry> {
+    await this.planLimits.requirePro(tenantId, 'Gestão de estoque');
+
     const product = await this.stockRepository.findProductByIdAndTenant(
       dto.productId,
       tenantId,

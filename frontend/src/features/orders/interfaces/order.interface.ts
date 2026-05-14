@@ -31,8 +31,20 @@ export interface IOrder {
   createdAt: string
 }
 
+export interface IOrderListItem {
+  id: string
+  tenantId: string
+  cashierId: string
+  status: string
+  total: number
+  paymentMethod: string
+  customerEmail: string | null
+  createdAt: string
+  itemCount: number
+}
+
 export interface IOrderListResponse {
-  data: IOrder[]
+  data: IOrderListItem[]
   meta: {
     page: number
     total: number

@@ -5,6 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
+import { PlanLimitsService } from '../../shared/services/plan-limits.service';
 
 export interface ProductListResponse {
   data: ProductResponseDto[];
@@ -13,7 +14,10 @@ export interface ProductListResponse {
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly productRepository: ProductRepository,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   async findAll(tenantId: string, query: ListProductsQueryDto): Promise<ProductListResponse> {
     const page = query.page ?? 1;
@@ -42,6 +46,8 @@ export class ProductService {
   }
 
   async create(tenantId: string, dto: CreateProductDto): Promise<ProductResponseDto> {
+    await this.planLimits.checkProductLimit(tenantId);
+
     if (dto.categoryId) {
       const category = await this.productRepository.findCategoryByIdAndTenant(
         dto.categoryId,

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { QrCode, Banknote, CreditCard, ChevronDown, ChevronUp } from 'lucide-react'
+import { QrCode, Banknote, CreditCard } from 'lucide-react'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
 import { useOrders } from '@/features/orders/hooks/useOrders'
-import type { IOrder } from '@/features/orders/interfaces/order.interface'
+import type { IOrderListItem } from '@/features/orders/interfaces/order.interface'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -79,24 +79,24 @@ function SkeletonCard() {
   )
 }
 
-function OrderRow({ order }: { order: IOrder }) {
-  const [expanded, setExpanded] = useState(false)
-
+function OrderRow({ order }: { order: IOrderListItem }) {
   return (
     <div className="rounded-xl border border-[#E2E8F0] bg-white overflow-hidden">
-      {/* Header row */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
+      <div
+        className="flex w-full items-center justify-between"
         style={{ padding: '14px 16px' }}
-        aria-expanded={expanded}
       >
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-[#0F172A]">{shortId(order.orderId)}</span>
+            <span className="text-sm font-semibold text-[#0F172A]">{shortId(order.id)}</span>
             <StatusBadge status={order.status} />
           </div>
           <span className="text-xs text-[#64748B]">{formatDate(order.createdAt)}</span>
+          {order.itemCount > 0 && (
+            <span className="text-xs text-[#94A3B8]">
+              {order.itemCount} {order.itemCount === 1 ? 'item' : 'itens'}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
@@ -108,45 +108,8 @@ function OrderRow({ order }: { order: IOrder }) {
           <span className="text-sm font-bold text-[#0F172A] w-20 text-right">
             {formatCurrency(order.total)}
           </span>
-          <span className="text-[#94A3B8]">
-            {expanded
-              ? <ChevronUp size={16} aria-hidden />
-              : <ChevronDown size={16} aria-hidden />
-            }
-          </span>
         </div>
-      </button>
-
-      {/* Expanded items */}
-      {expanded && order.items.length > 0 && (
-        <div
-          className="border-t border-[#F1F5F9]"
-          style={{ padding: '12px 16px', backgroundColor: '#F8FAFC' }}
-        >
-          <div className="flex flex-col gap-2">
-            {order.items.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between text-xs text-[#64748B]"
-              >
-                <span className="font-medium text-[#0F172A]">{item.name}</span>
-                <div className="flex items-center gap-3">
-                  <span>× {item.quantity}</span>
-                  <span className="font-semibold text-[#0F172A]">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-[#E2E8F0] pt-2">
-            <span className="text-xs font-semibold text-[#64748B]">
-              {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
-            </span>
-            <span className="text-xs font-bold text-[#0F172A]">{formatCurrency(order.total)}</span>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -161,7 +124,7 @@ const DATE_FILTERS: { id: DateFilter; label: string }[] = [
   { id: 'all',    label: 'Todos' },
 ]
 
-function filterOrders(orders: IOrder[], filter: DateFilter): IOrder[] {
+function filterOrders(orders: IOrderListItem[], filter: DateFilter): IOrderListItem[] {
   const now = new Date()
   if (filter === 'today') {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -180,7 +143,7 @@ export default function PedidosPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today')
   const { data, isLoading, isError } = useOrders({ page: 1, limit: 50 })
 
-  const allOrders: IOrder[] = data?.data ?? []
+  const allOrders: IOrderListItem[] = data?.data ?? []
   const orders = filterOrders(allOrders, dateFilter)
 
   return (
@@ -258,7 +221,7 @@ export default function PedidosPage() {
           {!isLoading && !isError && orders.length > 0 && (
             <div className="flex flex-col gap-3">
               {orders.map((order) => (
-                <OrderRow key={order.orderId} order={order} />
+                <OrderRow key={order.id} order={order} />
               ))}
             </div>
           )}

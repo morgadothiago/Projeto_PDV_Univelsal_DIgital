@@ -18,6 +18,7 @@ import {
 import { BillingService, SubscriptionListResponse } from './billing.service';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { UpgradePlanDto } from './dto/upgrade-plan.dto';
+import { PlanLimitsService, PlanUsage } from '../../shared/services/plan-limits.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -29,7 +30,10 @@ import { JwtPayload } from '../../shared/interfaces/jwt-payload.interface';
 @Controller('billing')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BillingController {
-  constructor(private readonly billingService: BillingService) {}
+  constructor(
+    private readonly billingService: BillingService,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   @Get('subscription')
   @Roles('store_owner', 'cashier')
@@ -64,6 +68,14 @@ export class BillingController {
     @Body() dto: UpgradePlanDto,
   ): Promise<SubscriptionResponseDto> {
     return this.billingService.upgradePlan(user.tenantId as string, dto);
+  }
+
+  @Get('usage')
+  @Roles('store_owner', 'cashier')
+  @ApiOperation({ summary: 'Retorna uso atual do plano (limites de produtos, caixeiros, pedidos)' })
+  @ApiResponse({ status: 200, description: 'Uso atual do plano' })
+  async getUsage(@CurrentUser() user: JwtPayload): Promise<PlanUsage> {
+    return this.planLimits.getUsage(user.tenantId as string);
   }
 
   @Get('subscriptions')

@@ -8,6 +8,10 @@ import { KPICardDesktop } from '@/features/dashboard/components/KPICardDesktop'
 import { WeeklyBarChart } from '@/features/dashboard/components/WeeklyBarChart'
 import { TopProductsList } from '@/features/dashboard/components/TopProductsList'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
+import { usePlanUsage } from '@/features/billing/hooks/usePlanUsage'
+import { PlanUsageBar } from '@/features/billing/components/PlanUsageBar'
+import Link from 'next/link'
+import { Zap } from 'lucide-react'
 
 function formatCurrency(v: number): string {
   return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })
@@ -64,6 +68,7 @@ export default function DashboardPage() {
   const { data: kpis, isLoading: kpisLoading } = useKPIs()
   const { data: weeklyData, isLoading: weeklyLoading } = useWeeklyChart()
   const { data: topProducts, isLoading: topLoading } = useTopProducts()
+  const { data: usage } = usePlanUsage()
 
   const userName = user?.name?.split(' ')[0] ?? 'Usuário'
   const dateString = getDateString()
@@ -233,6 +238,54 @@ export default function DashboardPage() {
                     <KPICardDesktop key={card.label} {...card} />
                   ))}
             </div>
+
+            {usage && usage.plan === 'free' && (
+              <div
+                className="flex flex-col bg-white rounded-[12px] border"
+                style={{ borderColor: '#E2E8F0', padding: '20px', gap: '16px' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold" style={{ fontSize: 14, color: '#0F172A' }}>
+                      Plano Gratuito
+                    </span>
+                    <span style={{ fontSize: 12, color: '#64748B' }}>
+                      Limites do seu plano atual
+                    </span>
+                  </div>
+                  <Link
+                    href="/configuracoes"
+                    className="flex items-center gap-1.5 font-semibold"
+                    style={{
+                      backgroundColor: '#2563EB',
+                      color: '#FFFFFF',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                    }}
+                  >
+                    <Zap size={14} />
+                    Upgrade Pro — R$79/mês
+                  </Link>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <PlanUsageBar label="Produtos" current={usage.products.current} limit={usage.products.limit} />
+                  <PlanUsageBar label="Caixeiros" current={usage.cashiers.current} limit={usage.cashiers.limit} />
+                  <PlanUsageBar label="Pedidos este mês" current={usage.ordersThisMonth.current} limit={usage.ordersThisMonth.limit} />
+                </div>
+                <div
+                  className="flex flex-col gap-1 rounded-lg"
+                  style={{ backgroundColor: '#EFF6FF', padding: '12px 16px' }}
+                >
+                  <span className="font-semibold" style={{ fontSize: 13, color: '#1D4ED8' }}>
+                    Pro desbloqueia:
+                  </span>
+                  <span style={{ fontSize: 12, color: '#3B82F6' }}>
+                    Produtos e caixeiros ilimitados · Relatórios completos · Gestão de estoque · Personalização de cores e logo
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-stretch" style={{ gap: '16px', height: '300px' }}>
               <div

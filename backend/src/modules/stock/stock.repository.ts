@@ -29,19 +29,18 @@ export class StockRepository {
     entry: NewStockEntry,
     newStock: number,
   ): Promise<StockEntry> {
-    return this.dbService.db.transaction(async (tx) => {
-      const [inserted] = await tx
-        .insert(stockEntries)
-        .values(entry)
-        .returning();
+    // NeonHttpDatabase doesn't support transactions — run sequentially
+    const [inserted] = await this.dbService.db
+      .insert(stockEntries)
+      .values(entry)
+      .returning();
 
-      await tx
-        .update(products)
-        .set({ stock: String(newStock), updatedAt: new Date() })
-        .where(eq(products.id, entry.productId));
+    await this.dbService.db
+      .update(products)
+      .set({ stock: String(newStock), updatedAt: new Date() })
+      .where(eq(products.id, entry.productId));
 
-      return inserted as StockEntry;
-    });
+    return inserted as StockEntry;
   }
 
   async findEntriesByTenant(

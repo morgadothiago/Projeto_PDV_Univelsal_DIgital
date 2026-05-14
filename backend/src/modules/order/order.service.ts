@@ -24,6 +24,7 @@ import {
 } from './dto/order-response.dto';
 import { OrderItem } from '../../database/schema/order-items';
 import { Payment } from '../../database/schema/payments';
+import { PlanLimitsService } from '../../shared/services/plan-limits.service';
 
 export interface OrderListResponse {
   data: Array<{
@@ -48,6 +49,7 @@ export class OrderService {
     private readonly dbService: DbService,
     private readonly notificationService: NotificationService,
     private readonly eventsGateway: EventsGateway,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   async createOrder(
@@ -55,6 +57,8 @@ export class OrderService {
     cashierId: string,
     dto: CreateOrderDto,
   ): Promise<CreateOrderResponseDto> {
+    await this.planLimits.checkOrderLimit(tenantId);
+
     const productIds = dto.items.map((i) => i.productId);
 
     const foundProducts = await this.dbService.db

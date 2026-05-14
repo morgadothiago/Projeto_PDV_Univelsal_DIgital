@@ -2,7 +2,7 @@
 
 import { Sidebar } from '@/components/shared/Sidebar'
 import { useOrders } from '@/features/orders/hooks/useOrders'
-import type { IOrder } from '@/features/orders/interfaces/order.interface'
+import type { IOrderListItem } from '@/features/orders/interfaces/order.interface'
 import { QrCode, Banknote, CreditCard } from 'lucide-react'
 
 const TODAY = new Date().toLocaleDateString('pt-BR', {
@@ -58,7 +58,7 @@ function PaymentIcon({ method }: { method: string }) {
   return <CreditCard size={16} className="text-[#64748B]" aria-hidden />
 }
 
-function OrderCard({ order }: { order: IOrder }) {
+function OrderCard({ order }: { order: IOrderListItem }) {
   return (
     <div
       className="flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-white px-4 py-[14px]"
@@ -66,10 +66,13 @@ function OrderCard({ order }: { order: IOrder }) {
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#0F172A]">{shortId(order.orderId)}</span>
+          <span className="text-sm font-semibold text-[#0F172A]">{shortId(order.id)}</span>
           <StatusBadge status={order.status} />
         </div>
         <span className="text-xs text-[#64748B]">{formatTime(order.createdAt)}</span>
+        {order.itemCount > 0 && (
+          <span className="text-xs text-[#94A3B8]">{order.itemCount} {order.itemCount === 1 ? 'item' : 'itens'}</span>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <PaymentIcon method={order.paymentMethod} />
@@ -94,7 +97,7 @@ function SkeletonCard() {
 export default function HistoricoPage() {
   const { data, isLoading, isError } = useOrders({ page: 1, limit: 20 })
 
-  const orders: IOrder[] = data?.data ?? []
+  const orders: IOrderListItem[] = data?.data ?? []
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
@@ -134,7 +137,7 @@ export default function HistoricoPage() {
           {!isLoading && !isError && orders.length > 0 && (
             <div className="flex flex-col gap-3">
               {orders.map((order) => (
-                <OrderCard key={order.orderId} order={order} />
+                <OrderCard key={order.id} order={order} />
               ))}
             </div>
           )}
