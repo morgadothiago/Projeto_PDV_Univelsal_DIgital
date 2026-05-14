@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Save } from 'lucide-react'
+import { Loader2, Save, QrCode, Copy, ExternalLink } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
 import { useTenantStore } from '@/store/useTenantStore'
 import { tenantApi } from '@/features/auth/api/tenant.api'
@@ -51,6 +52,14 @@ export default function ConfiguracoesPage() {
   })
 
   const isStoreOwner = user?.role === 'store_owner'
+  const tenantId = user?.tenantId
+  const cardapioUrl = tenantId
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://pdv-universal.vercel.app'}/cardapio/${tenantId}`
+    : ''
+
+  function copyCardapioLink() {
+    navigator.clipboard.writeText(cardapioUrl).then(() => toast.success('Link copiado!'))
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8FAFC' }}>
@@ -209,6 +218,104 @@ export default function ConfiguracoesPage() {
                     )}
                   </button>
                 </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+                {/* Section: Cardápio Digital */}
+                {cardapioUrl && (
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <QrCode size={16} style={{ color: '#0F172A' }} />
+                        <h2 className="font-semibold" style={{ fontSize: '15px', color: '#0F172A' }}>
+                          Cardápio Digital
+                        </h2>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
+                        Compartilhe o QR Code com seus clientes. Eles acessam o cardápio sem precisar de login.
+                      </p>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="flex flex-col items-center gap-4">
+                      <div
+                        style={{
+                          padding: '16px',
+                          borderRadius: '12px',
+                          border: '1px solid #E2E8F0',
+                          backgroundColor: '#FFFFFF',
+                          display: 'inline-flex',
+                        }}
+                      >
+                        <QRCodeSVG
+                          value={cardapioUrl}
+                          size={180}
+                          fgColor="#0F172A"
+                          bgColor="#FFFFFF"
+                          level="M"
+                        />
+                      </div>
+
+                      {/* Link display */}
+                      <div
+                        className="flex items-center gap-2 w-full"
+                        style={{
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '8px',
+                          padding: '10px 12px',
+                        }}
+                      >
+                        <span
+                          className="flex-1 truncate"
+                          style={{ fontSize: '12px', color: '#475569', fontFamily: 'monospace' }}
+                        >
+                          {cardapioUrl}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 w-full">
+                        <button
+                          onClick={copyCardapioLink}
+                          className="flex items-center justify-center gap-2 flex-1"
+                          style={{
+                            height: '40px',
+                            borderRadius: '8px',
+                            border: `1px solid ${localColor}`,
+                            backgroundColor: 'transparent',
+                            color: localColor,
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Copy size={14} />
+                          Copiar link
+                        </button>
+                        <a
+                          href={cardapioUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 flex-1"
+                          style={{
+                            height: '40px',
+                            borderRadius: '8px',
+                            backgroundColor: localColor,
+                            color: '#FFFFFF',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <ExternalLink size={14} />
+                          Ver cardápio
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center py-8" style={{ color: '#64748B', fontSize: '14px' }}>
