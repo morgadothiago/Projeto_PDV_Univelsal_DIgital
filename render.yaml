@@ -19,4 +19,14 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: EFI_CLIENT_ID
+        sync: false
+      - key: EFI_CLIENT_SECRET
+        sync: false
+      - key: EFI_CERT_BASE64
+        sync: false
+      - key: EFI_PIX_KEY
+        sync: false
+      - key: EFI_SANDBOX
+        value: "false"
     healthCheckPath: /api/v1/health

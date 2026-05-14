@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'crypto';
 import { eq, sql } from 'drizzle-orm';
 import { DbService } from '../../database/db.service';
 import { orders } from '../../database/schema/orders';
@@ -8,13 +6,16 @@ import { payments } from '../../database/schema/payments';
 import { products } from '../../database/schema/products';
 import { tenants } from '../../database/schema/tenants';
 import { orderItems } from '../../database/schema/order-items';
-import { PaymentService } from '../payment/payment.service';
 import { NotificationService } from '../notification/notification.service';
 
-export interface MercadoPagoWebhookBody {
-  type?: string;
-  data?: { id?: string };
-  action?: string;
+export interface EfiBankPixWebhookBody {
+  pix?: Array<{
+    endToEndId: string;
+    txid: string;
+    valor: string;
+    horario: string;
+    infoPagador?: string;
+  }>;
 }
 
 @Injectable()
@@ -22,104 +23,41 @@ export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly paymentService: PaymentService,
     private readonly dbService: DbService,
     private readonly notificationService: NotificationService,
   ) {}
 
-  validateMercadoPagoSignature(
-    xSignature: string,
-    xRequestId: string,
-    dataId: string,
-  ): boolean {
-    const secret = this.configService.get<string>('MP_WEBHOOK_SECRET');
-    if (!secret) {
-      // Only bypass signature validation in explicit test environments.
-      // In all other environments reject the webhook to prevent spoofing.
-      if (process.env['NODE_ENV'] === 'test') {
-        return true;
+  async processEfiPixWebhook(body: EfiBankPixWebhookBody): Promise<void> {
+    if (!body.pix || !Array.isArray(body.pix) || body.pix.length === 0) {
+      this.logger.warn('Efi Bank webhook received without pix array — ignoring');
+      return;
+    }
+
+    for (const pixItem of body.pix) {
+      if (!pixItem.txid) {
+        this.logger.warn('Efi Bank pix item missing txid — skipping');
+        continue;
       }
-      this.logger.warn('MP_WEBHOOK_SECRET not configured — rejecting webhook to prevent spoofing');
-      return false;
+      await this.confirmOrderFromWebhook(pixItem.txid);
     }
-
-    const { ts, v1 } = xSignature.split(',').reduce<{ ts: string; v1: string }>(
-      (acc, part) => {
-        const eqIndex = part.indexOf('=');
-        if (eqIndex === -1) return acc;
-        const key = part.slice(0, eqIndex).trim();
-        const value = part.slice(eqIndex + 1).trim();
-        if (key === 'ts') acc.ts = value;
-        else if (key === 'v1') acc.v1 = value;
-        return acc;
-      },
-      { ts: '', v1: '' },
-    );
-
-    if (!ts || !v1) return false;
-
-    const template = `id:${dataId};request-id:${xRequestId};ts:${ts}`;
-    const computed = createHmac('sha256', secret).update(template).digest('hex');
-
-    return computed === v1;
   }
 
-  async processPaymentWebhook(
-    body: MercadoPagoWebhookBody,
-    xSignature: string,
-    xRequestId: string,
-  ): Promise<void> {
-    const dataId = body.data?.id;
+  private async confirmOrderFromWebhook(txid: string): Promise<void> {
+    // Look up payment by externalId (txid stored when the charge was created)
+    const paymentResult = await this.dbService.db
+      .select()
+      .from(payments)
+      .where(eq(payments.externalId, txid))
+      .limit(1);
 
-    if (!dataId) {
-      this.logger.warn('Webhook received without data.id — ignoring');
+    const payment = paymentResult[0];
+    if (!payment) {
+      this.logger.warn(`Webhook: payment not found for txid ${txid}`);
       return;
     }
 
-    const signatureValid = this.validateMercadoPagoSignature(
-      xSignature,
-      xRequestId,
-      dataId,
-    );
+    const orderId = payment.orderId;
 
-    if (!signatureValid) {
-      this.logger.warn(`Invalid MP webhook signature for request-id: ${xRequestId}`);
-      return;
-    }
-
-    if (body.type !== 'payment') {
-      return;
-    }
-
-    let mpStatus: string;
-    let externalReference: string | null | undefined;
-
-    try {
-      const result = await this.paymentService.fetchPaymentStatus(dataId);
-      mpStatus = result.status;
-      externalReference = result.externalReference;
-    } catch (error) {
-      this.logger.error(`Failed to fetch MP payment ${dataId}`, error);
-      throw error;
-    }
-
-    if (mpStatus !== 'approved') {
-      return;
-    }
-
-    if (!externalReference) {
-      this.logger.warn(`MP payment ${dataId} approved but has no external_reference`);
-      return;
-    }
-
-    await this.confirmOrderFromWebhook(externalReference, dataId);
-  }
-
-  private async confirmOrderFromWebhook(
-    orderId: string,
-    mpPaymentId: string,
-  ): Promise<void> {
     const orderResult = await this.dbService.db
       .select()
       .from(orders)
@@ -128,24 +66,14 @@ export class WebhookService {
 
     const order = orderResult[0];
     if (!order) {
-      this.logger.warn(`Webhook: order ${orderId} not found`);
+      this.logger.warn(`Webhook: order ${orderId} not found (txid ${txid})`);
       return;
     }
 
     if (order.status === 'confirmed') {
-      this.logger.log(`Webhook: order ${orderId} already confirmed — skipping`);
-      return;
-    }
-
-    const paymentResult = await this.dbService.db
-      .select()
-      .from(payments)
-      .where(eq(payments.orderId, orderId))
-      .limit(1);
-
-    const payment = paymentResult[0];
-    if (!payment) {
-      this.logger.warn(`Webhook: payment not found for order ${orderId}`);
+      this.logger.log(
+        `Webhook: order ${orderId} already confirmed — skipping (txid ${txid})`,
+      );
       return;
     }
 
@@ -162,7 +90,7 @@ export class WebhookService {
       .from(orderItems)
       .where(eq(orderItems.orderId, orderId));
 
-    // NeonHttpDatabase doesn't support transactions — run sequentially
+    // NeonHttpDatabase does not support transactions — run sequentially
     const now = new Date();
 
     await this.dbService.db
@@ -175,7 +103,7 @@ export class WebhookService {
       .set({
         status: 'confirmed',
         confirmedAt: now,
-        externalId: mpPaymentId,
+        externalId: txid,
       })
       .where(eq(payments.id, payment.id));
 
@@ -200,7 +128,6 @@ export class WebhookService {
             })
             .where(eq(products.id, item.productId));
         } catch (err) {
-          // Log and continue — partial deduction is better than full failure
           stockErrors.push({ productId: item.productId, error: err });
           this.logger.error(
             `Webhook: stock deduction failed for product ${item.productId} on order ${orderId} — continuing`,
@@ -211,12 +138,14 @@ export class WebhookService {
       if (stockErrors.length > 0) {
         this.logger.warn(
           `Webhook: stock deduction completed with ${stockErrors.length} error(s) for order ${orderId}. ` +
-          `Failed product IDs: ${stockErrors.map((e) => e.productId).join(', ')}`,
+            `Failed product IDs: ${stockErrors.map((e) => e.productId).join(', ')}`,
         );
       }
     }
 
-    this.logger.log(`Webhook: order ${orderId} confirmed via MP payment ${mpPaymentId}`);
+    this.logger.log(
+      `Webhook: order ${orderId} confirmed via Efi Bank txid ${txid}`,
+    );
 
     if (order.customerEmail) {
       const receiptItems = items.map((item) => ({

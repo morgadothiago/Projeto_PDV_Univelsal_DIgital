@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Headers,
   HttpCode,
   HttpStatus,
   Post,
@@ -10,28 +9,31 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiHeader,
 } from '@nestjs/swagger';
-import { WebhookService, MercadoPagoWebhookBody } from './webhook.service';
+import { WebhookService, EfiBankPixWebhookBody } from './webhook.service';
 
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
-  @Post('mercadopago')
+  @Post('efi/pix')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Recebe notificação de pagamento do MercadoPago' })
-  @ApiHeader({ name: 'x-signature', description: 'Assinatura HMAC do MercadoPago para verificação de autenticidade' })
-  @ApiHeader({ name: 'x-request-id', description: 'ID único da requisição do MercadoPago' })
-  @ApiResponse({ status: 200, description: 'Webhook processado — pagamento confirmado, estoque baixado' })
-  @ApiResponse({ status: 400, description: 'Assinatura inválida ou payload malformado' })
-  async handleMercadoPago(
-    @Body() body: MercadoPagoWebhookBody,
-    @Headers('x-signature') xSignature: string = '',
-    @Headers('x-request-id') xRequestId: string = '',
-  ): Promise<{ received: boolean }> {
-    await this.webhookService.processPaymentWebhook(body, xSignature, xRequestId);
-    return { received: true };
+  @ApiOperation({
+    summary: 'Recebe notificação de pagamento PIX via Efi Bank',
+    description:
+      'Endpoint chamado pelo webhook da Efi Bank quando um PIX é confirmado. ' +
+      'A autenticação é feita via mTLS no nível de transporte — sem assinatura no header.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook processado — pagamento confirmado, estoque baixado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Payload malformado',
+  })
+  async efiPixWebhook(@Body() body: EfiBankPixWebhookBody): Promise<void> {
+    await this.webhookService.processEfiPixWebhook(body);
   }
 }
