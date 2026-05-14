@@ -29,6 +29,13 @@
       "when": 1778708269578,
       "tag": "0003_busy_expediter",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1747181400000,
+      "tag": "0004_menu_orders",
+      "breakpoints": true
     }
   ]
 }

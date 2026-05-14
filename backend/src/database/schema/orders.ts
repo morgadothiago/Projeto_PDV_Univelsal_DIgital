@@ -8,13 +8,18 @@ import { payments } from './payments';
 export const orders = pgTable('orders', {
   id: text('id').primaryKey(),
   tenantId: text('tenant_id').notNull(),
-  cashierId: text('cashier_id').notNull(),
+  cashierId: text('cashier_id'),
   status: text('status').notNull().default('pending'),
   total: numeric('total', { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text('payment_method'),
   customerEmail: text('customer_email'),
   notes: text('notes'),
   confirmedAt: timestamp('confirmed_at'),
+  // Self-service menu orders tracking
+  source: text('source').notNull().default('pos'),
+  customerName: text('customer_name'),
+  customerPhone: text('customer_phone'),
+  tableRef: text('table_ref'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

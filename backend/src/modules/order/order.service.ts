@@ -30,7 +30,7 @@ export interface OrderListResponse {
   data: Array<{
     id: string;
     tenantId: string;
-    cashierId: string;
+    cashierId: string | null;
     status: string;
     total: number;
     paymentMethod: string | null;
@@ -359,7 +359,7 @@ export class OrderService {
     order: {
       id: string;
       tenantId: string;
-      cashierId: string;
+      cashierId: string | null;
       status: string;
       total: string;
       paymentMethod: string | null;

@@ -137,8 +137,8 @@ export class AdminRepository {
         .limit(10),
     ]);
 
-    // Fetch cashier names for recent orders
-    const cashierIds = [...new Set(recentOrdersRaw.map((o) => o.cashierId))];
+    // Fetch cashier names for recent orders (menu orders have null cashierId — filter them out)
+    const cashierIds = [...new Set(recentOrdersRaw.map((o) => o.cashierId).filter((id): id is string => id !== null))];
     const cashierMap = new Map<string, string>();
     if (cashierIds.length > 0) {
       const cashierRows = await this.dbService.db
@@ -157,7 +157,7 @@ export class AdminRepository {
       },
       recentOrders: recentOrdersRaw.map((o) => ({
         id: o.id,
-        cashierName: cashierMap.get(o.cashierId) ?? 'Desconhecido',
+        cashierName: o.cashierId ? (cashierMap.get(o.cashierId) ?? 'Desconhecido') : 'Cardápio Digital',
         total: o.total,
         status: o.status,
         createdAt: o.createdAt,

@@ -53,8 +53,8 @@ export class OrderResponseDto {
   @ApiProperty({ example: 'uuid-do-tenant' })
   tenantId!: string;
 
-  @ApiProperty({ example: 'uuid-do-caixa' })
-  cashierId!: string;
+  @ApiPropertyOptional({ example: 'uuid-do-caixa', nullable: true })
+  cashierId!: string | null;
 
   @ApiProperty({ enum: ['pending', 'awaiting_payment', 'confirmed', 'cancelled'], example: 'pending' })
   status!: string;
