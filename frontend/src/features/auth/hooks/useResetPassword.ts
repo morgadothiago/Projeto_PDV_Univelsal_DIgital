@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { getApiErrorMessage } from '@/lib/api-error'
 import { authApi } from '../api/auth.api'
 
 export function useResetPassword() {
@@ -15,8 +16,8 @@ export function useResetPassword() {
       toast.success('Senha redefinida com sucesso!')
       router.push('/login')
     },
-    onError: () => {
-      toast.error('Token inválido ou expirado.')
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
     },
   })
 }

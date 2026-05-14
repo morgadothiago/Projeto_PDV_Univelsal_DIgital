@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import axios from 'axios'
 import { loginSchema, type LoginFormData } from '../schemas/login.schema'
 import { useLogin } from '../hooks/useLogin'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -25,17 +25,7 @@ export function LoginForm() {
     mutate(data)
   }
 
-  const apiErrorMessage = (() => {
-    if (!error) return null
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) return 'Credenciais inválidas'
-      const message = axios.isAxiosError(error) && error.response?.data?.message
-        ? error.response.data.message
-        : null
-      return message ?? 'Erro ao fazer login. Tente novamente.'
-    }
-    return 'Erro ao fazer login. Tente novamente.'
-  })()
+  const apiErrorMessage = error ? getApiErrorMessage(error) : null
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>

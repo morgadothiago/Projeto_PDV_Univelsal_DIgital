@@ -8,7 +8,7 @@ import { tenantApi } from '../api/tenant.api'
 import { useAuthStore } from '../store/auth.store'
 import { useTenantStore } from '@/store/useTenantStore'
 import type { LoginFormData } from '../schemas/login.schema'
-import type { AxiosError } from 'axios'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 export function useLogin() {
   const { setAuth, setRefreshToken } = useAuthStore()
@@ -32,8 +32,8 @@ export function useLogin() {
       else if (user.role === 'store_owner') router.push('/dashboard')
       else router.push('/pdv')
     },
-    onError: (error: AxiosError<{ message?: string }>) => {
-      toast.error(error?.response?.data?.message ?? 'Email ou senha inválidos')
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
     },
   })
 }

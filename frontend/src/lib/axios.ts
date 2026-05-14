@@ -1,7 +1,23 @@
 import axios from 'axios'
+import { toast } from 'sonner'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 if (!API_URL) throw new Error('NEXT_PUBLIC_API_URL is required')
+
+function getStoredTokens(): { accessToken: string | null; refreshToken: string | null } {
+  try {
+    const auth = localStorage.getItem('pdv-auth')
+    if (!auth) return { accessToken: null, refreshToken: null }
+    const parsed = JSON.parse(auth) as { state?: { token?: string; refreshToken?: string } }
+    return {
+      accessToken: parsed?.state?.token ?? null,
+      refreshToken: parsed?.state?.refreshToken ?? null,
+    }
+  } catch (err) {
+    console.warn('[axios] Failed to parse stored auth state:', err)
+    return { accessToken: null, refreshToken: null }
+  }
+}
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -10,17 +26,9 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const raw = localStorage.getItem('pdv-auth')
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as { state?: { token?: string } }
-        const token = parsed?.state?.token
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-        }
-      } catch {
-        // ignore parse errors
-      }
+    const { accessToken } = getStoredTokens()
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
     }
   }
   return config
@@ -53,18 +61,10 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
 
-      const raw = localStorage.getItem('pdv-auth')
-      let refreshToken: string | null = null
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as { state?: { refreshToken?: string } }
-          refreshToken = parsed?.state?.refreshToken ?? null
-        } catch {
-          // ignore
-        }
-      }
+      const { refreshToken } = getStoredTokens()
 
       if (!refreshToken) {
+        toast.error('Sessão expirada. Faça login novamente.')
         localStorage.removeItem('pdv-auth')
         window.location.href = '/login'
         return Promise.reject(error)
@@ -89,17 +89,17 @@ api.interceptors.response.use(
         )
         const newToken = res.data.data.accessToken
 
-        // Update localStorage directly
-        const raw2 = localStorage.getItem('pdv-auth')
-        if (raw2) {
+        // Update the persisted Zustand state in localStorage with the new token
+        const currentRaw = localStorage.getItem('pdv-auth')
+        if (currentRaw) {
           try {
-            const parsed = JSON.parse(raw2) as { state?: Record<string, unknown>; version?: number }
+            const parsed = JSON.parse(currentRaw) as { state?: Record<string, unknown>; version?: number }
             if (parsed.state) {
               parsed.state.token = newToken
               localStorage.setItem('pdv-auth', JSON.stringify(parsed))
             }
-          } catch {
-            // ignore
+          } catch (err) {
+            console.warn('[axios] Failed to update stored token after refresh:', err)
           }
         }
 
@@ -108,6 +108,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
+        toast.error('Sessão expirada. Faça login novamente.')
         localStorage.removeItem('pdv-auth')
         window.location.href = '/login'
         return Promise.reject(refreshError)

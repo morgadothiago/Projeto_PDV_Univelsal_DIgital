@@ -3,7 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { AxiosError } from 'axios'
+import { getApiErrorMessage } from '@/lib/api-error'
 import { authApi } from '../api/auth.api'
 import { useAuthStore } from '../store/auth.store'
 import { tenantApi } from '../api/tenant.api'
@@ -35,8 +35,8 @@ export function useRegister() {
       }
       router.push('/dashboard')
     },
-    onError: (error: AxiosError<{ message?: string }>) => {
-      toast.error(error?.response?.data?.message ?? 'Erro ao criar conta. Tente novamente.')
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
     },
   })
 }

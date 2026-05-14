@@ -3,6 +3,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import { toast } from 'sonner'
+import { getApiErrorMessage } from '@/lib/api-error'
 import { orderApi } from '../api/order.api'
 import { useOrderStore } from '../store/order.store'
 import { useCartStore } from '../store/cart.store'
@@ -53,6 +55,9 @@ export function useCreateOrder() {
         return
       }
       router.push('/recibo')
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
     },
   })
 

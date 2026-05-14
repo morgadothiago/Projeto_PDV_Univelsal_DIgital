@@ -36,7 +36,8 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: 'pdv-auth',
       partialize: (state) => ({ token: state.token, refreshToken: state.refreshToken, user: state.user }),
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        if (error) console.warn('[auth] Rehydration error:', error)
         state?.setHasHydrated(true)
       },
     }
