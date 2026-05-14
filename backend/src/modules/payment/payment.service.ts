@@ -11,14 +11,15 @@ export interface PixQrCodeResult {
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly mpClient: MercadoPagoConfig;
+  private mpClient: MercadoPagoConfig | null = null;
 
   constructor(private readonly configService: ConfigService) {
     const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN');
-    if (!accessToken || accessToken === 'placeholder') {
-      throw new Error('MP_ACCESS_TOKEN not configured — set a valid MercadoPago access token');
+    if (accessToken && accessToken !== 'placeholder') {
+      this.mpClient = new MercadoPagoConfig({ accessToken });
+    } else {
+      this.logger.warn('MP_ACCESS_TOKEN not configured — PIX payments disabled');
     }
-    this.mpClient = new MercadoPagoConfig({ accessToken });
   }
 
   async generatePixQrCode(
@@ -27,6 +28,9 @@ export class PaymentService {
     tenantId: string,
     customerEmail?: string,
   ): Promise<PixQrCodeResult> {
+    if (!this.mpClient) {
+      throw new BadGatewayException('PIX não configurado — MP_ACCESS_TOKEN ausente');
+    }
     try {
       const paymentApi = new Payment(this.mpClient);
 
