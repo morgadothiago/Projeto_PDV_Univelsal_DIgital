@@ -116,7 +116,7 @@ export class TenantService {
   async getMyTenant(tenantId: string): Promise<TenantResponseDto> {
     const tenant = await this.tenantRepository.findById(tenantId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
     return this.mapToResponseDto(tenant);
   }
@@ -124,7 +124,7 @@ export class TenantService {
   async updateMySettings(tenantId: string, dto: UpdateTenantSettingsDto): Promise<TenantResponseDto> {
     const tenant = await this.tenantRepository.findById(tenantId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
     const currentSettings = (tenant.settings as Record<string, unknown>) ?? {};
     const updated = await this.tenantRepository.update(tenantId, {

@@ -40,7 +40,7 @@ export class ProductService {
   async findOne(id: string, tenantId: string): Promise<ProductResponseDto> {
     const result = await this.productRepository.findById(id);
     if (!result || result.product.tenantId !== tenantId) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException('Produto não encontrado');
     }
     return this.mapToResponseDto(result);
   }
@@ -54,7 +54,7 @@ export class ProductService {
         tenantId,
       );
       if (!category) {
-        throw new BadRequestException(`Category with id ${dto.categoryId} not found`);
+        throw new BadRequestException('Categoria não encontrada');
       }
     }
 
@@ -85,7 +85,7 @@ export class ProductService {
   ): Promise<ProductResponseDto> {
     const existing = await this.productRepository.findByIdAndTenant(id, tenantId);
     if (!existing) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException('Produto não encontrado');
     }
 
     if (dto.categoryId) {
@@ -94,7 +94,7 @@ export class ProductService {
         tenantId,
       );
       if (!category) {
-        throw new BadRequestException(`Category with id ${dto.categoryId} not found`);
+        throw new BadRequestException('Categoria não encontrada');
       }
     }
 
@@ -116,12 +116,12 @@ export class ProductService {
   async remove(id: string, tenantId: string): Promise<ProductResponseDto> {
     const existing = await this.productRepository.findByIdAndTenant(id, tenantId);
     if (!existing) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException('Produto não encontrado');
     }
 
     const deleted = await this.productRepository.softDelete(id);
     if (!deleted) {
-      throw new NotFoundException(`Product with id ${id} not found`);
+      throw new NotFoundException('Produto não encontrado');
     }
 
     return this.mapToResponseDto({ product: deleted, category: null });

@@ -46,7 +46,7 @@ export class OrderController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateOrderDto,
   ): Promise<CreateOrderResponseDto> {
-    return this.orderService.createOrder(user.tenantId!, user.sub, dto);
+    return this.orderService.createOrder(user.tenantId!, user.sub, dto, user.email);
   }
 
   @Get()
