@@ -56,6 +56,7 @@ export class OrderService {
     tenantId: string,
     cashierId: string,
     dto: CreateOrderDto,
+    cashierName: string = '',
   ): Promise<CreateOrderResponseDto> {
     await this.planLimits.checkOrderLimit(tenantId);
 
@@ -70,13 +71,13 @@ export class OrderService {
 
     const missingId = productIds.find((id) => !productMap.has(id));
     if (missingId) {
-      throw new NotFoundException(`Product ${missingId} not found or does not belong to tenant`);
+      throw new NotFoundException('Produto não encontrado ou não pertence a este tenant');
     }
 
     const inactiveProduct = dto.items.find((item) => !productMap.get(item.productId)!.isActive);
     if (inactiveProduct) {
       throw new UnprocessableEntityException(
-        `Product ${inactiveProduct.productId} is inactive`,
+        'Um ou mais produtos do pedido estão inativos',
       );
     }
 
@@ -147,7 +148,7 @@ export class OrderService {
     this.eventsGateway.emitNewOrder(tenantId, {
       orderId,
       total,
-      cashierName: '',
+      cashierName,
     });
 
     let pixQrCode: string | null = null;
@@ -227,7 +228,7 @@ export class OrderService {
   ): Promise<OrderResponseDto> {
     const result = await this.orderRepository.findById(id, tenantId);
     if (!result) {
-      throw new NotFoundException(`Order ${id} not found`);
+      throw new NotFoundException('Pedido não encontrado');
     }
     return this.mapToOrderResponseDto(result.order, result.items, result.payment);
   }
@@ -240,25 +241,25 @@ export class OrderService {
   ): Promise<{ id: string; status: string }> {
     const result = await this.orderRepository.findById(orderId, tenantId);
     if (!result) {
-      throw new NotFoundException(`Order ${orderId} not found`);
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const { order, items } = result;
 
     if (requestingRole === 'cashier') {
       if (order.cashierId !== requestingUserId) {
-        throw new ForbiddenException('Cashiers can only cancel their own orders');
+        throw new ForbiddenException('Sem permissão para cancelar este pedido');
       }
       if (order.status !== 'pending') {
         throw new BadRequestException(
-          'Cashiers can only cancel orders in pending status',
+          'Cashier só pode cancelar pedidos com status pendente',
         );
       }
     } else {
       const cancellableStatuses = ['pending', 'awaiting_payment'];
       if (!cancellableStatuses.includes(order.status)) {
         throw new BadRequestException(
-          `Cannot cancel order with status "${order.status}"`,
+          `Não é possível cancelar um pedido com status "${order.status}"`,
         );
       }
     }
@@ -287,7 +288,7 @@ export class OrderService {
   ): Promise<{ id: string; status: string }> {
     const result = await this.orderRepository.findById(orderId, tenantId);
     if (!result) {
-      throw new NotFoundException(`Order ${orderId} not found`);
+      throw new NotFoundException('Pedido não encontrado');
     }
 
     const { order, items, payment } = result;
@@ -295,18 +296,18 @@ export class OrderService {
     const cashMethods = ['cash', 'credit_card', 'debit_card'];
     if (!order.paymentMethod || !cashMethods.includes(order.paymentMethod)) {
       throw new BadRequestException(
-        'confirm-cash is only valid for cash, credit_card, or debit_card orders',
+        'Confirmação manual é válida apenas para pagamentos em dinheiro, cartão de crédito ou débito',
       );
     }
 
     if (order.status !== 'awaiting_payment' && order.status !== 'pending') {
       throw new BadRequestException(
-        `Cannot confirm order with current status "${order.status}"`,
+        `Não é possível confirmar um pedido com status "${order.status}"`,
       );
     }
 
     if (!payment) {
-      throw new UnprocessableEntityException('Payment record not found for this order');
+      throw new UnprocessableEntityException('Registro de pagamento não encontrado para este pedido');
     }
 
     const tenant = await this.orderRepository.findTenantById(tenantId);

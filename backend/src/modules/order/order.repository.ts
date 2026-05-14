@@ -48,12 +48,12 @@ export class OrderRepository {
   async rollbackCreatedOrder(orderId: string): Promise<void> {
     try {
       await this.dbService.db.delete(orderItems).where(eq(orderItems.orderId, orderId));
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`Rollback: failed to delete order items for order ${orderId}`, err);
     }
     try {
       await this.dbService.db.delete(orders).where(eq(orders.id, orderId));
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`Rollback: failed to delete order ${orderId}`, err);
     }
   }
@@ -174,7 +174,7 @@ export class OrderRepository {
         .insert(orderItems)
         .values(payload.items)
         .returning()) as OrderItem[];
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`createOrder: items insert failed for order ${insertedOrder.id} — rolling back order`, err);
       await this.rollbackOrder(insertedOrder.id);
       throw err;
@@ -192,7 +192,7 @@ export class OrderRepository {
         .insert(payments)
         .values(paymentValues)
         .returning()) as Payment[];
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(`createOrder: payment insert failed for order ${insertedOrder.id} — rolling back order and items`, err);
       await this.rollbackOrder(insertedOrder.id);
       throw err;
@@ -248,7 +248,7 @@ export class OrderRepository {
               updatedAt: new Date(),
             })
             .where(eq(products.id, item.productId));
-        } catch (err) {
+        } catch (err: unknown) {
           // Log and continue — partial restore is better than full failure
           stockErrors.push({ productId: item.productId, error: err });
           this.logger.error(
@@ -302,7 +302,7 @@ export class OrderRepository {
               updatedAt: now,
             })
             .where(eq(products.id, item.productId));
-        } catch (err) {
+        } catch (err: unknown) {
           // Log and continue — partial deduction is better than full failure
           stockErrors.push({ productId: item.productId, error: err });
           this.logger.error(

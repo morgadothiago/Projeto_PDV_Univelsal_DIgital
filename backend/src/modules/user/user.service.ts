@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -54,7 +55,7 @@ export class UserService {
       };
     }
 
-    throw new ForbiddenException('Insufficient permissions to list users');
+    throw new ForbiddenException('Sem permissão para listar usuários');
   }
 
   async create(
@@ -62,24 +63,24 @@ export class UserService {
     dto: CreateUserDto,
   ): Promise<UserResponseDto> {
     if (dto.role === 'super_admin') {
-      throw new ForbiddenException('Cannot create a super_admin user');
+      throw new ForbiddenException('Não é permitido criar usuário super_admin');
     }
 
     if (currentUser.role === 'store_owner') {
       if (dto.role !== 'cashier') {
         throw new ForbiddenException(
-          'store_owner can only create cashier users',
+          'store_owner só pode criar usuários do tipo cashier',
         );
       }
       if (!currentUser.tenantId) {
-        throw new ForbiddenException('store_owner must have a tenant');
+        throw new ForbiddenException('store_owner não possui um tenant associado');
       }
       await this.planLimits.checkCashierLimit(currentUser.tenantId);
     }
 
     const existing = await this.userRepository.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException(`User with email ${dto.email} already exists`);
+      throw new ConflictException('Email já cadastrado');
     }
 
     const tenantId =
@@ -88,7 +89,7 @@ export class UserService {
     const now = new Date();
 
     const user = await this.userRepository.create({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       tenantId: tenantId ?? null,
       email: dto.email,
       passwordHash,
@@ -120,9 +121,7 @@ export class UserService {
     if (dto.email !== undefined) {
       const emailTaken = await this.userRepository.findByEmail(dto.email);
       if (emailTaken && emailTaken.id !== id) {
-        throw new ConflictException(
-          `Email ${dto.email} is already in use`,
-        );
+        throw new ConflictException('Email já está em uso por outro usuário');
       }
       updateData.email = dto.email;
     }
@@ -133,7 +132,7 @@ export class UserService {
 
     const updated = await this.userRepository.update(id, updateData);
     if (!updated) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundException('Usuário não encontrado');
     }
 
     return this.mapToResponseDto(updated);
@@ -144,7 +143,7 @@ export class UserService {
 
     const deleted = await this.userRepository.softDelete(id);
     if (!deleted) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundException('Usuário não encontrado');
     }
 
     return this.mapToResponseDto(deleted);
@@ -157,13 +156,13 @@ export class UserService {
     if (currentUser.role === 'super_admin') {
       const user = await this.userRepository.findById(userId);
       if (!user) {
-        throw new NotFoundException(`User with id ${userId} not found`);
+        throw new NotFoundException('Usuário não encontrado');
       }
       return user;
     }
 
     if (!currentUser.tenantId) {
-      throw new ForbiddenException('No tenant associated with current user');
+      throw new ForbiddenException('Sem permissão para esta ação');
     }
 
     const user = await this.userRepository.findByIdAndTenantId(
@@ -171,7 +170,7 @@ export class UserService {
       currentUser.tenantId,
     );
     if (!user) {
-      throw new NotFoundException(`User with id ${userId} not found`);
+      throw new NotFoundException('Usuário não encontrado');
     }
     return user;
   }

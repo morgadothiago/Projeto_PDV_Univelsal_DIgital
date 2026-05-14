@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { DbService } from '../../database/db.service';
+import { CONFIRMED_STATUSES } from '../../shared/constants/order-status.constants';
 import { orders } from '../../database/schema/orders';
 import { orderItems } from '../../database/schema/order-items';
 import { payments } from '../../database/schema/payments';
@@ -31,8 +32,6 @@ export interface PaymentMethodRow {
 }
 
 type GroupBy = 'day' | 'week' | 'month';
-
-const CONFIRMED_STATUSES = ['confirmed', 'completed'] as const;
 
 @Injectable()
 export class ReportRepository {

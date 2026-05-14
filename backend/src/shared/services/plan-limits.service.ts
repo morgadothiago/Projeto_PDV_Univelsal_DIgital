@@ -12,6 +12,7 @@ export interface PlanUsage {
   ordersThisMonth: { current: number; limit: number | null };
 }
 
+// Plan enforcement disabled — all tenants treated as pro until billing is re-enabled
 @Injectable()
 export class PlanLimitsService {
   constructor(private readonly dbService: DbService) {}

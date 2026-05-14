@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { TenantRepository } from './tenant.repository';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -50,7 +51,7 @@ export class TenantService {
   async findOne(id: string): Promise<TenantResponseDto> {
     const tenant = await this.tenantRepository.findById(id);
     if (!tenant) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
     return this.mapToResponseDto(tenant);
   }
@@ -63,13 +64,11 @@ export class TenantService {
       .limit(1);
 
     if (existingUser.length > 0) {
-      throw new ConflictException(
-        `User with email ${dto.ownerEmail} already exists`,
-      );
+      throw new ConflictException('Email já cadastrado');
     }
 
-    const tenantId = crypto.randomUUID();
-    const userId = crypto.randomUUID();
+    const tenantId = randomUUID();
+    const userId = randomUUID();
     const passwordHash = await bcrypt.hash(dto.ownerPassword, 12);
     const now = new Date();
 
@@ -103,12 +102,12 @@ export class TenantService {
   async update(id: string, dto: UpdateTenantDto): Promise<TenantResponseDto> {
     const existing = await this.tenantRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
 
     const updated = await this.tenantRepository.update(id, dto);
     if (!updated) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
 
     return this.mapToResponseDto(updated);
@@ -137,12 +136,12 @@ export class TenantService {
   async softDelete(id: string): Promise<TenantResponseDto> {
     const existing = await this.tenantRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
 
     const deleted = await this.tenantRepository.softDelete(id);
     if (!deleted) {
-      throw new NotFoundException(`Tenant with id ${id} not found`);
+      throw new NotFoundException('Tenant não encontrado');
     }
 
     return this.mapToResponseDto(deleted);

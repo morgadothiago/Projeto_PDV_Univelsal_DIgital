@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { Resend } from 'resend';
 import { DbService } from '../../database/db.service';
 import { users } from '../../database/schema/users';
@@ -95,7 +95,7 @@ export class AuthService {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException('Sessão expirada. Faça login novamente');
     }
 
     const result = await this.dbService.db
@@ -106,7 +106,7 @@ export class AuthService {
 
     const user = result[0];
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw new UnauthorizedException('Sessão expirada. Faça login novamente');
     }
 
     const newPayload: JwtPayload = {
@@ -137,7 +137,7 @@ export class AuthService {
       return;
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3600000); // 1h
 
     await this.dbService.db
@@ -209,8 +209,8 @@ export class AuthService {
       throw new ConflictException('Email já cadastrado');
     }
 
-    const tenantId = crypto.randomUUID();
-    const userId = crypto.randomUUID();
+    const tenantId = randomUUID();
+    const userId = randomUUID();
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const now = new Date();
 
@@ -226,30 +226,22 @@ export class AuthService {
       updatedAt: now,
     });
 
-    await this.dbService.db.insert(users).values({
-      id: userId,
-      tenantId,
-      email: dto.email,
-      passwordHash,
-      name: dto.ownerName,
-      role: 'store_owner',
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const [insertedUser] = await this.dbService.db
+      .insert(users)
+      .values({
+        id: userId,
+        tenantId,
+        email: dto.email,
+        passwordHash,
+        name: dto.ownerName,
+        role: 'store_owner',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
 
-    const newUser = {
-      id: userId,
-      tenantId,
-      email: dto.email,
-      name: dto.ownerName,
-      role: 'store_owner',
-      isActive: true,
-      passwordResetToken: null,
-      passwordResetExpiresAt: null,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const { passwordHash: _ph, ...newUser } = insertedUser;
 
     return this.login(newUser);
   }

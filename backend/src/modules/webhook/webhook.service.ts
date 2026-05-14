@@ -44,15 +44,18 @@ export class WebhookService {
       return false;
     }
 
-    const parts = xSignature.split(',');
-    let ts = '';
-    let v1 = '';
-
-    for (const part of parts) {
-      const [key, value] = part.trim().split('=');
-      if (key === 'ts') ts = value;
-      if (key === 'v1') v1 = value;
-    }
+    const { ts, v1 } = xSignature.split(',').reduce<{ ts: string; v1: string }>(
+      (acc, part) => {
+        const eqIndex = part.indexOf('=');
+        if (eqIndex === -1) return acc;
+        const key = part.slice(0, eqIndex).trim();
+        const value = part.slice(eqIndex + 1).trim();
+        if (key === 'ts') acc.ts = value;
+        else if (key === 'v1') acc.v1 = value;
+        return acc;
+      },
+      { ts: '', v1: '' },
+    );
 
     if (!ts || !v1) return false;
 
@@ -98,7 +101,7 @@ export class WebhookService {
       externalReference = result.externalReference;
     } catch (error) {
       this.logger.error(`Failed to fetch MP payment ${dataId}`, error);
-      return;
+      throw error;
     }
 
     if (mpStatus !== 'approved') {

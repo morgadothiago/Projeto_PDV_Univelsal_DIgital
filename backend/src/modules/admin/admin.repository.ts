@@ -6,6 +6,7 @@ import { orders } from '../../database/schema/orders';
 import { products } from '../../database/schema/products';
 import { users } from '../../database/schema/users';
 import { IAdminMetrics } from './interfaces/admin-metrics.interface';
+import { CONFIRMED_STATUSES } from '../../shared/constants/order-status.constants';
 
 export interface ITenantSummary {
   metrics: {
@@ -28,8 +29,6 @@ export interface ITenantSummary {
     stockThreshold: string;
   }[];
 }
-
-const CONFIRMED_STATUSES = ['confirmed', 'completed'] as const;
 
 @Injectable()
 export class AdminRepository {
@@ -82,8 +81,6 @@ export class AdminRepository {
   }
 
   async getTenantSummary(tenantId: string): Promise<ITenantSummary> {
-    const confirmedStatuses = ['confirmed', 'completed'] as const;
-
     const [
       revenueResult,
       ordersCountResult,
@@ -95,7 +92,7 @@ export class AdminRepository {
       this.dbService.db
         .select({ revenue: sql<string>`COALESCE(SUM(${orders.total})::numeric(10,2)::text, '0.00')` })
         .from(orders)
-        .where(and(eq(orders.tenantId, tenantId), inArray(orders.status, [...confirmedStatuses]))),
+        .where(and(eq(orders.tenantId, tenantId), inArray(orders.status, [...CONFIRMED_STATUSES]))),
 
       this.dbService.db
         .select({ count: sql<number>`COUNT(*)::int` })
