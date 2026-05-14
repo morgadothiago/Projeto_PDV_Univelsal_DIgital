@@ -31,8 +31,9 @@ export class PaymentService {
     if (!this.mpClient) {
       throw new BadGatewayException('PIX não configurado — MP_ACCESS_TOKEN ausente');
     }
+    const mpClient = this.mpClient;
     try {
-      const paymentApi = new Payment(this.mpClient);
+      const paymentApi = new Payment(mpClient);
 
       const response = await paymentApi.create({
         body: {
@@ -75,8 +76,11 @@ export class PaymentService {
     status: string;
     externalReference: string | null | undefined;
   }> {
+    if (!this.mpClient) {
+      throw new BadGatewayException('PIX não configurado — MP_ACCESS_TOKEN ausente');
+    }
     try {
-      const paymentApi = new Payment(this.mpClient);
+      const paymentApi = new Payment(this.mpClient!);
       const response = await paymentApi.get({ id: externalId });
       return {
         status: response.status ?? 'unknown',
