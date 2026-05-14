@@ -9,7 +9,7 @@ export interface ITenant {
   plan: TenantPlan
   stockEnabled: boolean
   isActive: boolean
-  settings: Record<string, unknown> | null
+  settings: { logoUrl?: string; primaryColor?: string } | null
   createdAt: string
   updatedAt: string
 }

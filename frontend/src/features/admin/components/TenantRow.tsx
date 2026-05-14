@@ -30,6 +30,7 @@ export function TenantRow({ tenant, showDetailLink = false, onChangePlan }: Tena
   const colors = AVATAR_COLORS[tenant.type] ?? AVATAR_COLORS['generic']
   const initials = getInitials(tenant.name)
   const status = tenant.isActive ? 'active' : 'suspended'
+  const logoUrl = tenant.settings?.logoUrl
 
   return (
     <tr
@@ -42,7 +43,7 @@ export function TenantRow({ tenant, showDetailLink = false, onChangePlan }: Tena
       <td style={{ padding: '0 20px', width: '260px' }}>
         <div className="flex items-center" style={{ gap: '12px' }}>
           <div
-            className="flex items-center justify-center flex-shrink-0"
+            className="flex items-center justify-center flex-shrink-0 overflow-hidden"
             style={{
               width: '36px',
               height: '36px',
@@ -50,16 +51,25 @@ export function TenantRow({ tenant, showDetailLink = false, onChangePlan }: Tena
               backgroundColor: colors.bg,
             }}
           >
-            <span
-              style={{
-                fontSize: '12px',
-                fontWeight: 700,
-                color: colors.text,
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              {initials}
-            </span>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`Logo ${tenant.name}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: colors.text,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {initials}
+              </span>
+            )}
           </div>
           <div className="flex flex-col">
             <span
