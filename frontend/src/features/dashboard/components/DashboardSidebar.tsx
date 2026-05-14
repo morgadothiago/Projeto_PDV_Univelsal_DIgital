@@ -46,6 +46,7 @@ export function DashboardSidebar() {
   const router   = useRouter()
   const { user, clearAuth } = useAuthStore()
   const primaryColor = useTenantStore((s) => s.primaryColor)
+  const logoUrl = useTenantStore((s) => s.logoUrl)
 
   useEffect(() => {
     document.documentElement.style.setProperty('--pdv-primary', primaryColor)
@@ -71,10 +72,19 @@ export function DashboardSidebar() {
         style={{ gap: '12px', padding: '0 20px 24px 20px' }}
       >
         <div
-          className="flex items-center justify-center flex-shrink-0"
+          className="flex items-center justify-center flex-shrink-0 overflow-hidden"
           style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#1E3A5F' }}
         >
-          <ShoppingCart size={18} style={{ color: '#2563EB' }} />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="Logo da loja"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          ) : (
+            <ShoppingCart size={18} style={{ color: '#2563EB' }} />
+          )}
         </div>
         <span
           className="font-bold"
