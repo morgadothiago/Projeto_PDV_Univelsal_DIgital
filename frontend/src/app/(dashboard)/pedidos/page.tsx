@@ -80,6 +80,8 @@ function SkeletonCard() {
 }
 
 function OrderRow({ order }: { order: IOrderListItem }) {
+  const isMenuOrder = order.source === 'menu'
+
   return (
     <div className="rounded-xl border border-[#E2E8F0] bg-white overflow-hidden">
       <div
@@ -90,8 +92,21 @@ function OrderRow({ order }: { order: IOrderListItem }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-[#0F172A]">{shortId(order.id)}</span>
             <StatusBadge status={order.status} />
+            {isMenuOrder && (
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={{ backgroundColor: '#FFF7ED', color: '#EA580C' }}
+              >
+                🍽 Cardápio Digital
+              </span>
+            )}
           </div>
           <span className="text-xs text-[#64748B]">{formatDate(order.createdAt)}</span>
+          {isMenuOrder && (order.customerName || order.tableRef) && (
+            <span className="text-xs text-[#94A3B8]">
+              {[order.customerName, order.tableRef].filter(Boolean).join(' · ')}
+            </span>
+          )}
           {order.itemCount > 0 && (
             <span className="text-xs text-[#94A3B8]">
               {order.itemCount} {order.itemCount === 1 ? 'item' : 'itens'}

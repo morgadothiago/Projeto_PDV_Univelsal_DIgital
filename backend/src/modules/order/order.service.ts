@@ -31,6 +31,9 @@ export interface OrderListResponse {
     id: string;
     tenantId: string;
     cashierId: string | null;
+    source: string;
+    customerName: string | null;
+    tableRef: string | null;
     status: string;
     total: number;
     paymentMethod: string | null;
@@ -211,6 +214,9 @@ export class OrderService {
         id: order.id,
         tenantId: order.tenantId,
         cashierId: order.cashierId,
+        source: order.source ?? 'pos',
+        customerName: order.customerName ?? null,
+        tableRef: order.tableRef ?? null,
         status: order.status,
         total: Number(order.total),
         paymentMethod: order.paymentMethod,

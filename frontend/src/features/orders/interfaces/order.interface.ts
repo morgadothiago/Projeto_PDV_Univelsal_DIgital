@@ -34,7 +34,10 @@ export interface IOrder {
 export interface IOrderListItem {
   id: string
   tenantId: string
-  cashierId: string
+  cashierId: string | null
+  source: string
+  customerName: string | null
+  tableRef: string | null
   status: string
   total: number
   paymentMethod: string
