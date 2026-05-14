@@ -108,6 +108,9 @@ export default function CheckoutPage({
               JSON.stringify({
                 ...result,
                 tenantName: tenant?.name ?? '',
+                pixQrCode: result.pixQrCode ?? null,
+                pixQrCodeBase64: result.pixQrCodeBase64 ?? null,
+                paymentMethod: paymentMethod,
               }),
             )
           }

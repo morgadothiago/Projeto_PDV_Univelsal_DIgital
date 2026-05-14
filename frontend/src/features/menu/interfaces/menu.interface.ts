@@ -46,4 +46,6 @@ export interface IMenuOrderResult {
   total: number
   status: string
   estimatedMinutes: number
+  pixQrCode?: string | null
+  pixQrCodeBase64?: string | null
 }

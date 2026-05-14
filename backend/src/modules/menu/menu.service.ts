@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { eq, and, inArray } from 'drizzle-orm';
 import { DbService } from '../../database/db.service';
 import { products } from '../../database/schema/products';
@@ -6,14 +6,19 @@ import { categories } from '../../database/schema/categories';
 import { tenants } from '../../database/schema/tenants';
 import { orders } from '../../database/schema/orders';
 import { orderItems } from '../../database/schema/order-items';
+import { payments } from '../../database/schema/payments';
 import { CreateMenuOrderDto } from './dto/create-menu-order.dto';
 import { EventsGateway } from '../events/events.gateway';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class MenuService {
+  private readonly logger = new Logger(MenuService.name);
+
   constructor(
     private readonly dbService: DbService,
     private readonly eventsGateway: EventsGateway,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async getProducts(tenantId: string) {
@@ -153,7 +158,44 @@ export class MenuService {
 
     await this.dbService.db.insert(orderItems).values(itemInserts);
 
-    // 6. Notify store_owner terminals via WebSocket
+    // 6. PIX payment — create payment record and attempt QR code generation
+    let pixQrCode: string | null = null;
+    let pixQrCodeBase64: string | null = null;
+
+    if (dto.paymentMethod === 'pix') {
+      const paymentId = crypto.randomUUID();
+
+      await this.dbService.db.insert(payments).values({
+        id: paymentId,
+        tenantId,
+        orderId,
+        method: 'pix',
+        amount: total.toFixed(2),
+        status: 'awaiting_payment',
+        pixQrCode: null,
+        externalId: null,
+        confirmedAt: null,
+        createdAt: new Date(),
+      });
+
+      try {
+        const pixResult = await this.paymentService.generatePixQrCode(orderId, total, tenantId);
+        pixQrCode = pixResult.pixQrCode;
+        pixQrCodeBase64 = pixResult.pixQrCodeBase64;
+
+        await this.dbService.db
+          .update(payments)
+          .set({
+            pixQrCode: pixResult.pixQrCode,
+            externalId: pixResult.externalId,
+          })
+          .where(eq(payments.id, paymentId));
+      } catch (err) {
+        this.logger.warn(`Menu PIX generation failed for order ${orderId}`, err);
+      }
+    }
+
+    // 7. Notify store_owner terminals via WebSocket
     const orderNumber = orderId.replace(/-/g, '').slice(-4).toUpperCase();
     this.eventsGateway.emitNewOrder(tenantId, {
       orderId,
@@ -167,6 +209,29 @@ export class MenuService {
       total: Number(total.toFixed(2)),
       status: 'pending',
       estimatedMinutes: 20,
+      pixQrCode,
+      pixQrCodeBase64,
+    };
+  }
+
+  async getOrderStatus(tenantId: string, orderId: string): Promise<{ status: string; paymentStatus: string | null }> {
+    const [order] = await this.dbService.db
+      .select({ id: orders.id, status: orders.status, tenantId: orders.tenantId })
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.tenantId, tenantId)))
+      .limit(1);
+
+    if (!order) throw new NotFoundException('Pedido não encontrado');
+
+    const [payment] = await this.dbService.db
+      .select({ status: payments.status })
+      .from(payments)
+      .where(eq(payments.orderId, orderId))
+      .limit(1);
+
+    return {
+      status: order.status,
+      paymentStatus: payment?.status ?? null,
     };
   }
 }

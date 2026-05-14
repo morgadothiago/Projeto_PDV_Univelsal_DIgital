@@ -70,6 +70,8 @@ export class MenuController {
         total: 32.5,
         status: 'pending',
         estimatedMinutes: 20,
+        pixQrCode: '00020126...',
+        pixQrCodeBase64: 'iVBORw0KGgo...',
       },
     },
   })
@@ -80,5 +82,29 @@ export class MenuController {
     @Body() dto: CreateMenuOrderDto,
   ) {
     return this.menuService.createOrder(tenantId, dto);
+  }
+
+  // Public — no auth required (customers poll order + payment status)
+  @Get(':tenantId/orders/:orderId/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Poll order and payment status (no auth required)' })
+  @ApiParam({ name: 'tenantId', description: 'UUID do tenant' })
+  @ApiParam({ name: 'orderId', description: 'UUID do pedido' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status do pedido e pagamento',
+    schema: {
+      example: {
+        status: 'pending',
+        paymentStatus: 'awaiting_payment',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Pedido não encontrado' })
+  async getOrderStatus(
+    @Param('tenantId') tenantId: string,
+    @Param('orderId') orderId: string,
+  ): Promise<{ status: string; paymentStatus: string | null }> {
+    return this.menuService.getOrderStatus(tenantId, orderId);
   }
 }
