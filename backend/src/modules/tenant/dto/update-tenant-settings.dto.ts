@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class UpdateTenantSettingsDto {
   @ApiPropertyOptional({ example: '#2563EB' })
@@ -11,4 +11,9 @@ export class UpdateTenantSettingsDto {
   @IsOptional()
   @IsString()
   logoUrl?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  onboardingCompleted?: boolean;
 }

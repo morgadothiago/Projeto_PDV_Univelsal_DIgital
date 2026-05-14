@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsOptional,
   IsBoolean,
+  IsUrl,
   Min,
   MaxLength,
 } from 'class-validator';
@@ -48,4 +49,10 @@ export class UpdateProductDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: 'https://example.com/photo.jpg', description: 'URL da imagem do produto', nullable: true })
+  @IsString()
+  @IsOptional()
+  @IsUrl({}, { message: 'imageUrl deve ser uma URL válida' })
+  imageUrl?: string;
 }

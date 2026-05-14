@@ -36,6 +36,13 @@
       "when": 1747181400000,
       "tag": "0004_menu_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1747267800000,
+      "tag": "0005_product_image_url",
+      "breakpoints": true
     }
   ]
 }

@@ -20,8 +20,19 @@ export function useLogin() {
       setAuth(accessToken, user)
       setRefreshToken(refreshToken)
       toast.success('Login realizado com sucesso!')
-      // Apply tenant theme non-critically
-      if (user.tenantId) {
+      // Apply tenant theme and handle onboarding redirect non-critically
+      if (user.tenantId && user.role === 'store_owner') {
+        tenantApi.getMyTenant().then((tenant) => {
+          if (tenant.settings) {
+            useTenantStore.getState().setTenantSettings(tenant.settings)
+          }
+          const isOnboarded = tenant.settings?.onboardingCompleted === true
+          router.push(isOnboarded ? '/dashboard' : '/onboarding')
+        }).catch(() => {
+          router.push('/onboarding')
+        })
+        return
+      } else if (user.tenantId) {
         tenantApi.getMyTenant().then((tenant) => {
           if (tenant.settings) {
             useTenantStore.getState().setTenantSettings(tenant.settings)
@@ -29,7 +40,6 @@ export function useLogin() {
         }).catch(() => {})
       }
       if (user.role === 'super_admin') router.push('/admin')
-      else if (user.role === 'store_owner') router.push('/dashboard')
       else router.push('/pdv')
     },
     onError: (err) => {

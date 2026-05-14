@@ -24,6 +24,9 @@ export class ProductResponseDto {
   @ApiPropertyOptional({ example: 'm³', nullable: true })
   customUnit?: string | null;
 
+  @ApiPropertyOptional({ example: 'https://example.com/photo.jpg', nullable: true })
+  imageUrl?: string | null;
+
   @ApiProperty({ example: 10 })
   stock!: number;
 

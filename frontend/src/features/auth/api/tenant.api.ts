@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types/api.types'
 export interface ITenantSettings {
   primaryColor?: string
   logoUrl?: string
+  onboardingCompleted?: boolean
 }
 
 export interface ITenantResponse {

@@ -26,6 +26,7 @@ export class MenuService {
         customUnit: products.customUnit,
         categoryId: products.categoryId,
         categoryName: categories.name,
+        imageUrl: products.imageUrl,
         stock: products.stock,
         active: products.isActive,
       })
@@ -43,7 +44,7 @@ export class MenuService {
         customUnit: r.customUnit ?? null,
         categoryId: r.categoryId ?? null,
         categoryName: r.categoryName ?? null,
-        imageUrl: null,
+        imageUrl: r.imageUrl ?? null,
         stock: Number(r.stock),
         active: r.active,
       })),

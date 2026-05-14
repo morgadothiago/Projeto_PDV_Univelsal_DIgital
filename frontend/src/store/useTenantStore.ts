@@ -4,8 +4,9 @@ import { persist } from 'zustand/middleware'
 interface TenantStore {
   primaryColor: string
   logoUrl: string | null
+  onboardingCompleted: boolean
   setPrimaryColor: (color: string) => void
-  setTenantSettings: (settings: { primaryColor?: string; logoUrl?: string }) => void
+  setTenantSettings: (settings: { primaryColor?: string; logoUrl?: string; onboardingCompleted?: boolean }) => void
   applyTheme: () => void
 }
 
@@ -14,6 +15,7 @@ export const useTenantStore = create<TenantStore>()(
     (set, get) => ({
       primaryColor: '#2563EB',
       logoUrl: null,
+      onboardingCompleted: false,
       setPrimaryColor: (color) => {
         set({ primaryColor: color })
         if (typeof window !== 'undefined') {
@@ -24,6 +26,7 @@ export const useTenantStore = create<TenantStore>()(
         set({
           primaryColor: settings.primaryColor ?? get().primaryColor,
           logoUrl: settings.logoUrl ?? get().logoUrl,
+          onboardingCompleted: settings.onboardingCompleted ?? get().onboardingCompleted,
         })
         get().applyTheme()
       },
@@ -35,7 +38,11 @@ export const useTenantStore = create<TenantStore>()(
     }),
     {
       name: 'pdv-tenant',
-      partialize: (state) => ({ primaryColor: state.primaryColor, logoUrl: state.logoUrl }),
+      partialize: (state) => ({
+        primaryColor: state.primaryColor,
+        logoUrl: state.logoUrl,
+        onboardingCompleted: state.onboardingCompleted,
+      }),
     }
   )
 )

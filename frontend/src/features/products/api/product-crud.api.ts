@@ -10,6 +10,7 @@ export interface ICreateProductDto {
   stockThreshold?: number
   isActive?: boolean
   customUnit?: string
+  imageUrl?: string
 }
 
 export interface IUpdateProductDto extends Partial<ICreateProductDto> {}

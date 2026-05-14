@@ -18,6 +18,7 @@ const PUBLIC_PATHS: (string | RegExp)[] = [
   '/register',
   '/forgot-password',
   '/reset-password',
+  '/onboarding',
   /^\/cardapio(\/.*)?$/,
   /^\/api\//,
 ]
