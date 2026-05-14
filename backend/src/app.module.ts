@@ -15,6 +15,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { EventsModule } from './modules/events/events.module';
+import { MenuModule } from './modules/menu/menu.module';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { SharedModule } from './shared/shared.module';
     AdminModule,
     BillingModule,
     EventsModule,
+    MenuModule,
   ],
 })
 export class AppModule {}
