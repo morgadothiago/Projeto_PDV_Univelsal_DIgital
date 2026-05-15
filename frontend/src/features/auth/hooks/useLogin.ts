@@ -23,7 +23,8 @@ export function useLogin() {
       // Apply tenant theme and handle onboarding redirect non-critically
       if (user.tenantId && user.role === 'store_owner') {
         tenantApi.getMyTenant().then((tenant) => {
-          // Always reset store with fresh data — prevents stale onboardingCompleted from previous session
+          // Reset first — clears previous user's colors/logo/flags from localStorage
+          useTenantStore.getState().reset()
           useTenantStore.getState().setTenantSettings({
             primaryColor: tenant.settings?.primaryColor,
             logoUrl: tenant.settings?.logoUrl,
@@ -37,6 +38,7 @@ export function useLogin() {
         return
       } else if (user.tenantId) {
         tenantApi.getMyTenant().then((tenant) => {
+          useTenantStore.getState().reset()
           useTenantStore.getState().setTenantSettings({
             primaryColor: tenant.settings?.primaryColor,
             logoUrl: tenant.settings?.logoUrl,

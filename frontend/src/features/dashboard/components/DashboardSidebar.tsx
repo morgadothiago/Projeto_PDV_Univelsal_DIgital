@@ -71,6 +71,7 @@ export function DashboardSidebar() {
 
   function handleLogout() {
     clearAuth()
+    useTenantStore.getState().reset()
     router.replace('/login')
   }
 

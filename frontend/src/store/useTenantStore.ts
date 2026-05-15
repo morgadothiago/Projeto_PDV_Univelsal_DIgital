@@ -1,21 +1,26 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const DEFAULTS = {
+  primaryColor: '#2563EB',
+  logoUrl: null as string | null,
+  onboardingCompleted: false,
+}
+
 interface TenantStore {
   primaryColor: string
   logoUrl: string | null
   onboardingCompleted: boolean
   setPrimaryColor: (color: string) => void
   setTenantSettings: (settings: { primaryColor?: string; logoUrl?: string; onboardingCompleted?: boolean }) => void
+  reset: () => void
   applyTheme: () => void
 }
 
 export const useTenantStore = create<TenantStore>()(
   persist(
     (set, get) => ({
-      primaryColor: '#2563EB',
-      logoUrl: null,
-      onboardingCompleted: false,
+      ...DEFAULTS,
       setPrimaryColor: (color) => {
         set({ primaryColor: color })
         if (typeof window !== 'undefined') {
@@ -24,11 +29,17 @@ export const useTenantStore = create<TenantStore>()(
       },
       setTenantSettings: (settings) => {
         set({
-          primaryColor: settings.primaryColor ?? get().primaryColor,
-          logoUrl: settings.logoUrl ?? get().logoUrl,
-          onboardingCompleted: settings.onboardingCompleted ?? get().onboardingCompleted,
+          primaryColor: settings.primaryColor ?? DEFAULTS.primaryColor,
+          logoUrl: settings.logoUrl ?? DEFAULTS.logoUrl,
+          onboardingCompleted: settings.onboardingCompleted ?? DEFAULTS.onboardingCompleted,
         })
         get().applyTheme()
+      },
+      reset: () => {
+        set(DEFAULTS)
+        if (typeof window !== 'undefined') {
+          document.documentElement.style.setProperty('--pdv-primary', DEFAULTS.primaryColor)
+        }
       },
       applyTheme: () => {
         if (typeof window !== 'undefined') {
