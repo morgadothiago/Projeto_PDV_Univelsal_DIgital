@@ -7,6 +7,7 @@ export interface ICreateProductDto {
   price: number
   categoryId?: string
   unitType: 'unit' | 'weight' | 'digital'
+  initialStock?: number
   stockThreshold?: number
   isActive?: boolean
   customUnit?: string

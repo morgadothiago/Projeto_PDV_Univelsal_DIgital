@@ -68,7 +68,7 @@ export class ProductService {
       customUnit: dto.customUnit ?? null,
       imageUrl: dto.imageUrl ?? null,
       categoryId: dto.categoryId ?? null,
-      stock: '0',
+      stock: dto.initialStock !== undefined ? String(dto.initialStock) : '0',
       stockThreshold: dto.stockThreshold !== undefined ? String(dto.stockThreshold) : '5',
       isActive: dto.isActive ?? true,
       createdAt: now,

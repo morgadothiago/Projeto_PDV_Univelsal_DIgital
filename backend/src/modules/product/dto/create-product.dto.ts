@@ -48,6 +48,12 @@ export class CreateProductDto {
   @Min(0)
   stockThreshold?: number;
 
+  @ApiPropertyOptional({ example: 10, default: 0, description: 'Estoque inicial do produto' })
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  initialStock?: number;
+
   @ApiPropertyOptional({ example: true, description: 'Produto ativo (default: true)' })
   @IsBoolean()
   @IsOptional()

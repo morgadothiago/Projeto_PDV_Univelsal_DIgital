@@ -616,7 +616,8 @@ export default function OnboardingPage() {
         .post('/products', {
           name: prod.name,
           price: prod.price,
-          stock: prod.stock,
+          unitType: 'unit',
+          initialStock: prod.stock,
           categoryId: prod.categoryId ?? null,
         })
         .catch(() => {})
