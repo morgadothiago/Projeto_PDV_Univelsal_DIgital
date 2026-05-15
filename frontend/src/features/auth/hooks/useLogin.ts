@@ -23,9 +23,12 @@ export function useLogin() {
       // Apply tenant theme and handle onboarding redirect non-critically
       if (user.tenantId && user.role === 'store_owner') {
         tenantApi.getMyTenant().then((tenant) => {
-          if (tenant.settings) {
-            useTenantStore.getState().setTenantSettings(tenant.settings)
-          }
+          // Always reset store with fresh data — prevents stale onboardingCompleted from previous session
+          useTenantStore.getState().setTenantSettings({
+            primaryColor: tenant.settings?.primaryColor,
+            logoUrl: tenant.settings?.logoUrl,
+            onboardingCompleted: tenant.settings?.onboardingCompleted ?? false,
+          })
           const isOnboarded = tenant.settings?.onboardingCompleted === true
           router.push(isOnboarded ? '/dashboard' : '/onboarding')
         }).catch(() => {
@@ -34,9 +37,11 @@ export function useLogin() {
         return
       } else if (user.tenantId) {
         tenantApi.getMyTenant().then((tenant) => {
-          if (tenant.settings) {
-            useTenantStore.getState().setTenantSettings(tenant.settings)
-          }
+          useTenantStore.getState().setTenantSettings({
+            primaryColor: tenant.settings?.primaryColor,
+            logoUrl: tenant.settings?.logoUrl,
+            onboardingCompleted: tenant.settings?.onboardingCompleted ?? false,
+          })
         }).catch(() => {})
       }
       if (user.role === 'super_admin') router.push('/admin')
