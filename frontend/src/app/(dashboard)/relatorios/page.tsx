@@ -69,7 +69,7 @@ export default function RelatoriosPage() {
 
   const { dateFrom, dateTo } = useMemo(() => getDateRange(filter), [filter])
 
-  const { data: salesData, isLoading: salesLoading } = useQuery({
+  const { data: salesData, isLoading: salesLoading, isError: salesError, refetch: refetchSales } = useQuery({
     queryKey: ['reports/sales', filter],
     queryFn: () => reportsApi.getSales({ groupBy: 'day', dateFrom, dateTo }),
   })
@@ -116,6 +116,28 @@ export default function RelatoriosPage() {
         {/* Content */}
         {(!usage || usage.plan === 'pro') && (
         <div className="flex-1 overflow-y-auto" style={{ backgroundColor: '#F8FAFC' }}>
+          {salesError && (
+            <div className="flex flex-col items-center justify-center" style={{ paddingTop: '60px', gap: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#64748B' }}>Erro ao carregar relatórios.</p>
+              <button
+                onClick={() => refetchSales()}
+                style={{
+                  height: '36px',
+                  padding: '0 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+          {!salesError && (
           <div className="flex flex-col" style={{ gap: '14px', padding: '16px' }}>
             {/* Filter pills */}
             <div className="flex" style={{ gap: '8px' }}>
@@ -297,6 +319,7 @@ export default function RelatoriosPage() {
               )}
             </div>
           </div>
+          )}
         </div>
         )}
       </div>

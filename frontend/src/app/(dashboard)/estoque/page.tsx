@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PackagePlus, TriangleAlert, X, ChevronDown } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useProducts } from '@/features/products/hooks/useProducts'
 import { stockApi } from '@/features/stock/api/stock.api'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
@@ -113,7 +114,14 @@ function EntradaSheet({ products, onClose }: EntradaSheetProps) {
     mutationFn: () => stockApi.addEntry({ productId, quantity: Number(quantity) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Entrada registrada com sucesso')
       onClose()
+    },
+    onError: (error: unknown) => {
+      const msg =
+        (error as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Erro ao registrar entrada'
+      toast.error(msg)
     },
   })
 

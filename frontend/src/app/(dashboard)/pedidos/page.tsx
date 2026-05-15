@@ -156,7 +156,7 @@ function filterOrders(orders: IOrderListItem[], filter: DateFilter): IOrderListI
 
 export default function PedidosPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today')
-  const { data, isLoading, isError } = useOrders({ page: 1, limit: 50 })
+  const { data, isLoading, isError, refetch } = useOrders({ page: 1, limit: 50 })
 
   const allOrders: IOrderListItem[] = data?.data ?? []
   const orders = filterOrders(allOrders, dateFilter)
@@ -218,10 +218,26 @@ export default function PedidosPage() {
           )}
 
           {isError && (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center py-20" style={{ gap: '12px' }}>
               <p style={{ fontSize: '14px', color: '#64748B' }}>
-                Erro ao carregar pedidos. Tente novamente.
+                Erro ao carregar pedidos.
               </p>
+              <button
+                onClick={() => refetch()}
+                style={{
+                  height: '36px',
+                  padding: '0 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Tentar novamente
+              </button>
             </div>
           )}
 

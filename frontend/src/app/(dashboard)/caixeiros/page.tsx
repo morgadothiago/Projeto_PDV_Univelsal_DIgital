@@ -5,6 +5,7 @@ import { UserPlus, X, Trash2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usersApi } from '@/features/users/api/users.api'
 import { DashboardSidebar } from '@/features/dashboard/components/DashboardSidebar'
+import { useAuthStore } from '@/features/auth/store/auth.store'
 import type { IUser } from '@/features/users/api/users.api'
 
 function getInitials(name: string): string {
@@ -242,16 +243,31 @@ function NovoCaixeiroSheet({ onClose }: NovoCaixeiroSheetProps) {
 export default function CaixeirosPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const queryClient = useQueryClient()
+  const authUser = useAuthStore((s) => s.user)
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['users'],
     queryFn: usersApi.findAll,
+    enabled: authUser?.role === 'store_owner',
   })
 
   const { mutate: deleteUser, variables: deletingId } = useMutation({
     mutationFn: (id: string) => usersApi.softDelete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   })
+
+  if (authUser?.role !== 'store_owner') {
+    return (
+      <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8FAFC' }}>
+        <DashboardSidebar />
+        <div className="flex flex-1 items-center justify-center">
+          <span style={{ fontSize: '14px', color: '#94A3B8' }}>
+            Apenas donos de loja podem gerenciar caixeiros.
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8FAFC' }}>
@@ -299,6 +315,28 @@ export default function CaixeirosPage() {
                 style={{ height: '76px', backgroundColor: '#E2E8F0' }}
               />
             ))
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center" style={{ paddingTop: '40px', gap: '12px' }}>
+              <span style={{ fontSize: '14px', color: '#64748B' }}>
+                Erro ao carregar caixeiros.
+              </span>
+              <button
+                onClick={() => refetch()}
+                style={{
+                  height: '36px',
+                  padding: '0 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Tentar novamente
+              </button>
+            </div>
           ) : users.length === 0 ? (
             <div className="flex items-center justify-center" style={{ paddingTop: '40px' }}>
               <span style={{ fontSize: '14px', color: '#94A3B8' }}>

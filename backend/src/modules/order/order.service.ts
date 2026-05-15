@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -46,6 +47,8 @@ export interface OrderListResponse {
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly paymentService: PaymentService,
@@ -137,22 +140,26 @@ export class OrderService {
         },
       });
 
-    // DB insert confirmed — emit real-time events to all cashier terminals in the same tenant
-    for (const item of dto.items) {
-      const product = productMap.get(item.productId)!;
-      const newStock = Math.max(0, Number(product.stock) - item.quantity);
-      this.eventsGateway.emitStockUpdate(tenantId, {
-        productId: item.productId,
-        newStock,
-        productName: product.name,
+    // DB insert confirmed — emit real-time events (best-effort, never block the response)
+    try {
+      for (const item of dto.items) {
+        const product = productMap.get(item.productId)!;
+        const newStock = Math.max(0, Number(product.stock) - item.quantity);
+        this.eventsGateway.emitStockUpdate(tenantId, {
+          productId: item.productId,
+          newStock,
+          productName: product.name,
+        });
+      }
+      this.eventsGateway.emitNewOrder(tenantId, {
+        orderId,
+        total,
+        cashierName,
       });
+    } catch (socketErr) {
+      // Socket failure must not fail the HTTP response — order is already persisted
+      this.logger.warn(`WebSocket emit failed for order ${orderId}: ${String(socketErr)}`);
     }
-
-    this.eventsGateway.emitNewOrder(tenantId, {
-      orderId,
-      total,
-      cashierName,
-    });
 
     let pixQrCode: string | null = null;
     let pixQrCodeBase64: string | null = null;

@@ -4,7 +4,8 @@ import { toast } from 'sonner'
 export function getApiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const serverMessage = err.response?.data?.message
+    const serverMessage =
+      err.response?.data?.error?.message ?? err.response?.data?.message
 
     // Use server message if it's a non-empty string (backend sends Portuguese messages)
     if (typeof serverMessage === 'string' && serverMessage.length > 0) {
