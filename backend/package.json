@@ -24,7 +24,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/platform-socket.io": "^10.4.22",
-    "@nestjs/serve-static": "^5.0.5",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/websockets": "^10.4.22",
     "@types/multer": "^2.1.0",
