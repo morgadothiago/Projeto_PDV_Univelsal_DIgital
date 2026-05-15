@@ -8,7 +8,8 @@ export interface IProduct {
   categoryName: string | null
   imageUrl: string | null
   stock: number
-  active: boolean
+  stockThreshold?: number
+  isActive: boolean
 }
 
 export interface IProductList {

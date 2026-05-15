@@ -57,7 +57,7 @@ export default function CardapioPage({
   const filtered = products.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
     const matchCategory = selectedCategory ? p.categoryId === selectedCategory : true
-    return matchSearch && matchCategory && p.active
+    return matchSearch && matchCategory && p.isActive
   })
 
   const cartItemCount = itemCount()

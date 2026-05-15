@@ -42,10 +42,10 @@ let failedQueue: Array<{
 
 function processQueue(error: unknown, token: string | null) {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
+    if (error || !token) {
+      prom.reject(error ?? new Error('Token inválido após refresh'))
     } else {
-      prom.resolve(token!)
+      prom.resolve(token)
     }
   })
   failedQueue = []

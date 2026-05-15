@@ -29,7 +29,10 @@ export class ListProductsQueryDto {
 
   @ApiPropertyOptional({ example: true, description: 'Filtrar por status ativo/inativo' })
   @IsOptional()
-  @Transform(({ value }: { value: string }) => value === 'true')
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined || value === null) return undefined;
+    return String(value) === 'true';
+  })
   @IsBoolean()
   isActive?: boolean;
 }

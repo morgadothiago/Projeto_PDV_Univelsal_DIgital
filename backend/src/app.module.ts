@@ -1,5 +1,7 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { DbModule } from './database/db.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -16,6 +18,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { EventsModule } from './modules/events/events.module';
 import { MenuModule } from './modules/menu/menu.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
@@ -23,6 +26,11 @@ import { SharedModule } from './shared/shared.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      serveStaticOptions: { index: false },
     }),
     SharedModule,
     DbModule,
@@ -41,6 +49,7 @@ import { SharedModule } from './shared/shared.module';
     BillingModule,
     EventsModule,
     MenuModule,
+    UploadModule,
   ],
 })
 export class AppModule {}

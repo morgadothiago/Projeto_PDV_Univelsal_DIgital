@@ -38,6 +38,7 @@ const schema = z.object({
   categoryId: z.string().min(1, 'Categoria é obrigatória'),
   type: z.enum(['unit', 'weight', 'digital']),
   stockEnabled: z.boolean(),
+  initialStock: z.string().optional(),
   lowStockThreshold: z.string().min(1),
   isActive: z.boolean(),
   customUnit: z.string().max(20).optional(),
@@ -308,6 +309,7 @@ export default function NovoProdutoPage() {
       imageUrl: '',
       type: 'unit' as const,
       stockEnabled: true,
+      initialStock: '',
       lowStockThreshold: '10',
       isActive: true,
       price: '',
@@ -335,6 +337,7 @@ export default function NovoProdutoPage() {
         categoryId: data.categoryId || undefined,
         unitType: data.type,
         stockThreshold: data.stockEnabled ? parseInt(data.lowStockThreshold, 10) : undefined,
+        initialStock: data.initialStock ? parseInt(data.initialStock, 10) : undefined,
         isActive: data.isActive,
         customUnit: data.customUnit || undefined,
         imageUrl: data.imageUrl || undefined,
@@ -611,36 +614,62 @@ export default function NovoProdutoPage() {
                 />
               </div>
 
-              {/* Threshold */}
+              {/* Threshold + Initial stock */}
               {stockEnabled && (
-                <FieldGroup label="Alerta de estoque baixo">
-                  <div className="relative">
-                    <select
-                      {...register('lowStockThreshold')}
-                      className="border appearance-none w-full outline-none"
+                <>
+                  <FieldGroup label="Estoque inicial">
+                    <input
+                      {...register('initialStock')}
+                      type="number"
+                      min="0"
+                      placeholder="Ex: 50"
+                      className="border outline-none"
                       style={{
                         height: '48px',
-                        padding: '0 40px 0 14px',
+                        padding: '0 14px',
                         borderRadius: '8px',
                         backgroundColor: '#FFFFFF',
                         borderColor: '#E2E8F0',
                         fontSize: '14px',
                         color: '#0F172A',
+                        width: '100%',
                         boxSizing: 'border-box',
                       }}
-                    >
-                      {THRESHOLD_OPTIONS.map((v) => (
-                        <option key={v} value={String(v)}>
-                          {v} unidades
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      style={{ color: '#64748B', position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
                     />
-                  </div>
-                </FieldGroup>
+                    <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                      Quantidade disponível ao criar o produto
+                    </span>
+                  </FieldGroup>
+
+                  <FieldGroup label="Alerta de estoque baixo">
+                    <div className="relative">
+                      <select
+                        {...register('lowStockThreshold')}
+                        className="border appearance-none w-full outline-none"
+                        style={{
+                          height: '48px',
+                          padding: '0 40px 0 14px',
+                          borderRadius: '8px',
+                          backgroundColor: '#FFFFFF',
+                          borderColor: '#E2E8F0',
+                          fontSize: '14px',
+                          color: '#0F172A',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        {THRESHOLD_OPTIONS.map((v) => (
+                          <option key={v} value={String(v)}>
+                            {v} unidades
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={16}
+                        style={{ color: '#64748B', position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                      />
+                    </div>
+                  </FieldGroup>
+                </>
               )}
 
               {/* Active toggle */}

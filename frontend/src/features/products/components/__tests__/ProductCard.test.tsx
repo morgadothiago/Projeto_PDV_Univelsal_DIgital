@@ -22,7 +22,7 @@ const mockProduct: IProduct = {
   categoryName: 'Bebidas',
   imageUrl: null,
   stock: 10,
-  active: true,
+  isActive: true,
 }
 
 describe('ProductCard', () => {

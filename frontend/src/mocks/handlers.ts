@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 
 export const handlers = [
-  http.post('http://localhost:3001/api/v1/auth/login', () => {
+  http.post(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/auth/login`, () => {
     return HttpResponse.json({
       success: true,
       data: {

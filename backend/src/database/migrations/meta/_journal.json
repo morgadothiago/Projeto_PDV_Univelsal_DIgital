@@ -43,6 +43,13 @@
       "when": 1747267800000,
       "tag": "0005_product_image_url",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1778821071752,
+      "tag": "0006_swift_ezekiel_stane",
+      "breakpoints": true
     }
   ]
 }

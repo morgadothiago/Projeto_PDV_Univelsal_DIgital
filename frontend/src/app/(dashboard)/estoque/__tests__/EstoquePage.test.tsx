@@ -68,7 +68,7 @@ function makeProduct(overrides: Partial<IProduct> = {}): IProduct {
     categoryName: 'Bebidas',
     imageUrl: null,
     stock: 20,
-    active: true,
+    isActive: true,
     ...overrides,
   }
 }

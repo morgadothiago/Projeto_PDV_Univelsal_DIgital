@@ -336,7 +336,7 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
           type: toTypeEnum(product.unitType),
           stockEnabled: true,
           lowStockThreshold: '10',
-          isActive: product.active,
+          isActive: product.isActive,
           customUnit: product.customUnit ?? '',
         }
       : undefined,

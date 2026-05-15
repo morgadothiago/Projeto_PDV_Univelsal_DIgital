@@ -76,7 +76,8 @@ export class ProductService {
     });
 
     const result = await this.productRepository.findById(product.id);
-    return this.mapToResponseDto(result!);
+    if (!result) throw new NotFoundException('Produto não encontrado após criação');
+    return this.mapToResponseDto(result);
   }
 
   async update(
@@ -112,7 +113,8 @@ export class ProductService {
     await this.productRepository.update(id, updateData);
 
     const result = await this.productRepository.findById(id);
-    return this.mapToResponseDto(result!);
+    if (!result) throw new NotFoundException('Produto não encontrado após atualização');
+    return this.mapToResponseDto(result);
   }
 
   async remove(id: string, tenantId: string): Promise<ProductResponseDto> {

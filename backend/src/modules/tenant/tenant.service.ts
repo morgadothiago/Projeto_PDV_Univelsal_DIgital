@@ -130,7 +130,8 @@ export class TenantService {
     const updated = await this.tenantRepository.update(tenantId, {
       settings: { ...currentSettings, ...dto },
     });
-    return this.mapToResponseDto(updated!);
+    if (!updated) throw new NotFoundException('Tenant não encontrado após atualização');
+    return this.mapToResponseDto(updated);
   }
 
   async softDelete(id: string): Promise<TenantResponseDto> {

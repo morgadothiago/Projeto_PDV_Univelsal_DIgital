@@ -4,8 +4,9 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
 interface HttpExceptionResponse {
   message?: string | string[];
@@ -15,9 +16,12 @@ interface HttpExceptionResponse {
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -45,10 +49,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
         },
       });
     } else {
+      const err = exception as Error;
+      this.logger.error(
+        `[500] ${request.method} ${request.url} — ${err?.message ?? 'Unknown error'}`,
+        err?.stack,
+      );
       response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: {
-          message: 'An unexpected error occurred',
+          message: err?.message ?? 'An unexpected error occurred',
           code: 'INTERNAL_ERROR',
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         },

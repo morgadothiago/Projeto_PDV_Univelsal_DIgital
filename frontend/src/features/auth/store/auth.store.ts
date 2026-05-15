@@ -15,10 +15,12 @@ interface AuthStore {
   refreshToken: string | null
   user: AuthUser | null
   _hasHydrated: boolean
+  isBootstrapping: boolean
   setAuth: (token: string, user: AuthUser) => void
   clearAuth: () => void
   setHasHydrated: (v: boolean) => void
   setRefreshToken: (refreshToken: string) => void
+  setBootstrapping: (v: boolean) => void
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -28,10 +30,12 @@ export const useAuthStore = create<AuthStore>()(
       refreshToken: null,
       user: null,
       _hasHydrated: false,
+      isBootstrapping: false,
       setAuth: (token, user) => set({ token, user }),
-      clearAuth: () => set({ token: null, refreshToken: null, user: null }),
+      clearAuth: () => set({ token: null, refreshToken: null, user: null, isBootstrapping: false }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
       setRefreshToken: (refreshToken) => set({ refreshToken }),
+      setBootstrapping: (v) => set({ isBootstrapping: v }),
     }),
     {
       name: 'pdv-auth',

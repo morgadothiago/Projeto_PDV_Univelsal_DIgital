@@ -1,17 +1,17 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/api-error'
 import { authApi } from '../api/auth.api'
 import { useAuthStore } from '../store/auth.store'
-import { tenantApi } from '../api/tenant.api'
 import { useTenantStore } from '@/store/useTenantStore'
+import { clearAllAppStorage } from '@/lib/storage'
 
 export function useRegister() {
-  const { setAuth, setRefreshToken } = useAuthStore()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: {
@@ -21,19 +21,13 @@ export function useRegister() {
       email: string
       password: string
     }) => authApi.register(data),
-    onSuccess: ({ accessToken, refreshToken, user }) => {
-      setAuth(accessToken, user)
-      setRefreshToken(refreshToken)
-      toast.success('Loja criada com sucesso!')
-      // Fetch tenant settings non-critically
-      if (user.tenantId) {
-        tenantApi.getMyTenant().then((tenant) => {
-          if (tenant.settings) {
-            useTenantStore.getState().setTenantSettings(tenant.settings)
-          }
-        }).catch(() => {})
-      }
-      router.push('/dashboard')
+    onSuccess: () => {
+      clearAllAppStorage()
+      useAuthStore.getState().clearAuth()
+      useTenantStore.getState().reset()
+      queryClient.clear()
+      toast.success('Loja criada com sucesso! Faça login para continuar.')
+      router.push('/login')
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))

@@ -7,11 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { loginSchema, type LoginFormData } from '../schemas/login.schema'
 import { useLogin } from '../hooks/useLogin'
+import { useAuthStore } from '../store/auth.store'
 import { getApiErrorMessage } from '@/lib/api-error'
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const { mutate, isPending, error } = useLogin()
+  const isBootstrapping = useAuthStore((s) => s.isBootstrapping)
 
   const {
     register,
@@ -28,6 +30,33 @@ export function LoginForm() {
   const apiErrorMessage = error ? getApiErrorMessage(error) : null
 
   return (
+    <>
+      {isBootstrapping && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+          }}
+          aria-live="polite"
+          aria-label="Carregando conta"
+        >
+          <Loader2 size={40} color="#2563EB" className="animate-spin" aria-hidden />
+          <p style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
+            Carregando sua conta...
+          </p>
+          <p style={{ color: '#94A3B8', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+            Preparando seu ambiente
+          </p>
+        </div>
+      )}
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="flex flex-col gap-4">
         {/* Email field */}
@@ -115,7 +144,7 @@ export function LoginForm() {
         {/* Submit button */}
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isBootstrapping}
           className="flex h-13 w-full items-center justify-center gap-2 rounded-[10px] bg-[#2563EB] text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70"
           aria-label="Entrar"
         >
@@ -137,5 +166,6 @@ export function LoginForm() {
         </Link>
       </div>
     </form>
+    </>
   )
 }

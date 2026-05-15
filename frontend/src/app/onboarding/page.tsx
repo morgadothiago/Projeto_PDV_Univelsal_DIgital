@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, Store, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { CheckCircle, ImageIcon, Link2, Loader2, Store, Upload, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { useTenantStore } from '@/store/useTenantStore'
 import { tenantApi } from '@/features/auth/api/tenant.api'
@@ -21,6 +23,7 @@ interface LocalProduct {
   price: number
   stock: number
   categoryId: string | null
+  imageUrl: string | null
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -336,6 +339,56 @@ function Step3Products({
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('0')
   const [categoryId, setCategoryId] = useState<string>('')
+  const [imageTab, setImageTab] = useState<'url' | 'file'>('url')
+  const [imageUrl, setImageUrl] = useState('')
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+
+    // Preview local imediato (base64)
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setImagePreview(ev.target?.result as string)
+      setImageError(false)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload real para o backend
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await api.post<{ data: { url: string } }>('/upload/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setImageUrl(res.data.data.url)
+    } catch {
+      setImageError(true)
+      setImagePreview(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  function handleUrlChange(val: string) {
+    setImageUrl(val)
+    setImagePreview(val || null)
+    setImageError(false)
+  }
+
+  function clearImage() {
+    setImageUrl('')
+    setImagePreview(null)
+    setImageError(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   function addProduct() {
     const trimmedName = name.trim()
@@ -350,12 +403,14 @@ function Step3Products({
         price: parsedPrice,
         stock: parseInt(stock, 10) || 0,
         categoryId: categoryId || null,
+        imageUrl: imageUrl || null,
       },
     ])
     setName('')
     setPrice('')
     setStock('0')
     setCategoryId('')
+    clearImage()
   }
 
   function removeProduct(id: string) {
@@ -374,10 +429,27 @@ function Step3Products({
     boxSizing: 'border-box',
   }
 
+  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: '6px 0',
+    fontSize: 13,
+    fontWeight: active ? 600 : 400,
+    color: active ? '#FFFFFF' : '#94A3B8',
+    background: active ? '#2563EB' : 'transparent',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    transition: 'all 0.15s',
+  })
+
   return (
     <div className="flex flex-col gap-5">
       <p style={{ color: '#94A3B8', fontSize: 14 }}>
-        Adicione produtos para começar a vender imediatamente.
+        Adicione produtos e defina o estoque inicial de cada um.
       </p>
 
       <div className="flex flex-col gap-3">
@@ -385,47 +457,159 @@ function Step3Products({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addProduct() } }}
           placeholder="Nome do produto"
           style={inputStyle}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="Preço (R$)"
-            min={0}
-            step={0.01}
-            style={inputStyle}
-          />
-          <input
-            type="number"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-            placeholder="Estoque"
-            min={0}
-            style={inputStyle}
-          />
+          <div className="flex flex-col gap-1">
+            <label style={{ color: '#94A3B8', fontSize: 12 }}>Preço (R$)</label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0,00"
+              min={0}
+              step={0.01}
+              style={inputStyle}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label style={{ color: '#94A3B8', fontSize: 12 }}>Estoque inicial</label>
+            <input
+              type="number"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              placeholder="0"
+              min={0}
+              style={inputStyle}
+            />
+          </div>
         </div>
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          style={{
-            ...inputStyle,
-            appearance: 'none',
-            cursor: 'pointer',
-          }}
+          style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
         >
           <option value="">Sem categoria</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
           ))}
         </select>
+
+        {/* Image section */}
+        <div style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 8, padding: 12 }}>
+          <p style={{ color: '#94A3B8', fontSize: 12, marginBottom: 8 }}>Imagem do produto (opcional)</p>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 4, background: '#1E293B', borderRadius: 8, padding: 3, marginBottom: 10 }}>
+            <button type="button" style={tabBtnStyle(imageTab === 'url')} onClick={() => setImageTab('url')}>
+              <Link2 size={13} aria-hidden /> URL
+            </button>
+            <button type="button" style={tabBtnStyle(imageTab === 'file')} onClick={() => setImageTab('file')}>
+              <Upload size={13} aria-hidden /> Computador
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            {/* Preview thumbnail */}
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 8,
+                background: '#1E293B',
+                border: '1px solid #334155',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
+              {imagePreview && !imageError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <ImageIcon size={20} color="#475569" aria-hidden />
+              )}
+            </div>
+
+            {/* Input area */}
+            <div style={{ flex: 1 }}>
+              {imageTab === 'url' ? (
+                <input
+                  type="text"
+                  value={imageUrl.startsWith('data:') ? '' : imageUrl}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="https://exemplo.com/imagem.png"
+                  style={{ ...inputStyle, padding: '6px 10px', fontSize: 13 }}
+                />
+              ) : (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                    id="product-image-file"
+                  />
+                  <label
+                    htmlFor="product-image-file"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: '#1E293B',
+                      border: '1px dashed #334155',
+                      borderRadius: 8,
+                      padding: '6px 10px',
+                      color: '#94A3B8',
+                      fontSize: 13,
+                      cursor: isUploading ? 'not-allowed' : 'pointer',
+                      userSelect: 'none',
+                      opacity: isUploading ? 0.7 : 1,
+                    }}
+                  >
+                    {isUploading
+                      ? <><Loader2 size={13} className="animate-spin" aria-hidden /> Enviando...</>
+                      : imageUrl && !imageUrl.startsWith('data:')
+                        ? <><Upload size={13} aria-hidden /> Imagem enviada ✓</>
+                        : <><Upload size={13} aria-hidden /> Escolher arquivo...</>
+                    }
+                  </label>
+                </>
+              )}
+              {imageError && (
+                <p style={{ color: '#EF4444', fontSize: 11, marginTop: 4 }}>URL inválida ou imagem não carregou</p>
+              )}
+            </div>
+
+            {/* Clear button */}
+            {imageUrl && (
+              <button
+                type="button"
+                onClick={clearImage}
+                aria-label="Remover imagem"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: 4, flexShrink: 0 }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
         <button
           type="button"
           onClick={addProduct}
+          disabled={isUploading}
           style={{
             background: '#2563EB',
             color: '#FFFFFF',
@@ -434,10 +618,15 @@ function Step3Products({
             padding: '8px 16px',
             fontSize: 14,
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: isUploading ? 'not-allowed' : 'pointer',
+            opacity: isUploading ? 0.7 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            justifyContent: 'center',
           }}
         >
-          Adicionar produto
+          {isUploading ? <><Loader2 size={14} className="animate-spin" aria-hidden /> Enviando imagem...</> : 'Adicionar produto'}
         </button>
       </div>
 
@@ -454,27 +643,50 @@ function Step3Products({
                 border: '1px solid #334155',
                 borderRadius: 8,
                 padding: '8px 12px',
+                gap: 8,
               }}
             >
-              <div>
-                <span style={{ color: '#FFFFFF', fontSize: 14 }}>{prod.name}</span>
-                <span style={{ color: '#94A3B8', fontSize: 12, marginLeft: 8 }}>
-                  R$ {prod.price.toFixed(2)}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                {/* Thumbnail na lista */}
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    background: '#1E293B',
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {prod.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={prod.imageUrl}
+                      alt={prod.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : (
+                    <ImageIcon size={14} color="#475569" aria-hidden />
+                  )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <span style={{ color: '#FFFFFF', fontSize: 14, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {prod.name}
+                  </span>
+                  <span style={{ color: '#94A3B8', fontSize: 12 }}>
+                    R$ {prod.price.toFixed(2)} · estoque: {prod.stock}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => removeProduct(prod.id)}
                 aria-label={`Remover ${prod.name}`}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94A3B8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 2,
-                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center', padding: 2, flexShrink: 0 }}
               >
                 <X size={14} />
               </button>
@@ -554,6 +766,7 @@ function Step4Done({
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, _hasHydrated } = useAuthStore()
   const { onboardingCompleted } = useTenantStore()
 
@@ -584,6 +797,10 @@ export default function OnboardingPage() {
 
   // Step 4 state
   const [isFinishing, setIsFinishing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Map of localCategory id → api id (needed to link products)
+  const [categoryIdMap, setCategoryIdMap] = useState<Map<string, string>>(new Map())
 
   // Initialise color from tenant store on mount
   useEffect(() => {
@@ -601,27 +818,63 @@ export default function OnboardingPage() {
     setStep(1)
   }
 
-  function handleStep2Next() {
-    // Fire-and-forget each category
-    categories.forEach((cat) => {
-      api.post('/categories', { name: cat.name }).catch(() => {})
-    })
+  async function handleStep2Next() {
+    if (categories.length === 0) {
+      setStep(2)
+      return
+    }
+    setIsSaving(true)
+    const idMap = new Map<string, string>()
+    await Promise.allSettled(
+      categories.map(async (cat) => {
+        try {
+          const res = await api.post<{ data: { id: string } }>('/categories', { name: cat.name })
+          idMap.set(cat.id, res.data.data.id)
+        } catch (err: unknown) {
+          const e = err as { response?: { data?: { error?: { message?: string } } }; message?: string }
+          console.error('[onboarding] Categoria falhou:', e?.response?.data ?? e?.message)
+        }
+      }),
+    )
+    setCategoryIdMap(idMap)
+    setIsSaving(false)
     setStep(2)
   }
 
-  function handleStep3Next() {
-    // Fire-and-forget each product
-    products.forEach((prod) => {
-      api
-        .post('/products', {
+  async function handleStep3Next() {
+    if (products.length === 0) {
+      setStep(3)
+      return
+    }
+    setIsSaving(true)
+    console.log('[onboarding] Criando produtos:', products.length)
+    const results = await Promise.allSettled(
+      products.map((prod) => {
+        const body = {
           name: prod.name,
           price: prod.price,
           unitType: 'unit',
           initialStock: prod.stock,
-          categoryId: prod.categoryId ?? null,
-        })
-        .catch(() => {})
-    })
+          categoryId: prod.categoryId ? (categoryIdMap.get(prod.categoryId) ?? undefined) : undefined,
+          ...(prod.imageUrl ? { imageUrl: prod.imageUrl } : {}),
+        }
+        console.log('[onboarding] POST /products:', body)
+        return api.post('/products', body)
+      }),
+    )
+    const successes = results.filter((r) => r.status === 'fulfilled').length
+    console.log('[onboarding] Produtos criados com sucesso:', successes, '/', products.length)
+    const failures = results.filter((r) => r.status === 'rejected')
+    if (failures.length > 0) {
+      failures.forEach((f, i) => {
+        const err = (f as PromiseRejectedResult).reason
+        const msg = err?.response?.data?.error?.message ?? err?.message ?? 'Erro desconhecido'
+        console.error(`[onboarding] Produto ${i + 1} falhou:`, msg, err?.response?.data)
+      })
+      const firstMsg = (failures[0] as PromiseRejectedResult).reason?.response?.data?.error?.message
+      toast.error(firstMsg ?? `${failures.length} produto(s) não puderam ser salvos. Tente novamente.`)
+    }
+    setIsSaving(false)
     setStep(3)
   }
 
@@ -630,14 +883,14 @@ export default function OnboardingPage() {
     try {
       await tenantApi.updateMySettings({ onboardingCompleted: true })
       useTenantStore.getState().setTenantSettings({ onboardingCompleted: true })
-      router.push('/dashboard')
     } catch {
-      // Even on error, proceed to dashboard
       useTenantStore.getState().setTenantSettings({ onboardingCompleted: true })
-      router.push('/dashboard')
     } finally {
       setIsFinishing(false)
     }
+    await queryClient.invalidateQueries({ queryKey: ['products'] })
+    await queryClient.invalidateQueries({ queryKey: ['stock'] })
+    router.push('/dashboard')
   }
 
   const navBtnBase: React.CSSProperties = {
@@ -746,6 +999,7 @@ export default function OnboardingPage() {
               {step >= 1 && (
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => {
                     if (step === 1) handleStep2Next()
                     else if (step === 2) handleStep3Next()
@@ -757,6 +1011,8 @@ export default function OnboardingPage() {
                     padding: '10px 0',
                     textDecoration: 'underline',
                     textUnderlineOffset: 3,
+                    opacity: isSaving ? 0.5 : 1,
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
                   }}
                 >
                   Pular esta etapa
@@ -765,6 +1021,7 @@ export default function OnboardingPage() {
             </div>
             <button
               type="button"
+              disabled={isSaving}
               onClick={() => {
                 if (step === 0) handleStep1Next()
                 else if (step === 1) handleStep2Next()
@@ -774,9 +1031,21 @@ export default function OnboardingPage() {
                 ...navBtnBase,
                 background: '#2563EB',
                 color: '#FFFFFF',
+                opacity: isSaving ? 0.7 : 1,
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
-              {step === 2 ? 'Finalizar' : 'Próximo'}
+              {isSaving ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" aria-hidden />
+                  Salvando...
+                </>
+              ) : (
+                step === 2 ? 'Finalizar' : 'Próximo'
+              )}
             </button>
           </div>
         )}

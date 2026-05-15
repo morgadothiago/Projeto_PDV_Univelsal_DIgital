@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { eq, and, inArray } from 'drizzle-orm';
 import { DbService } from '../../database/db.service';
 import { products } from '../../database/schema/products';
@@ -130,7 +131,7 @@ export class MenuService {
     );
 
     // 4. Insert order
-    const orderId = crypto.randomUUID();
+    const orderId = randomUUID();
     await this.dbService.db.insert(orders).values({
       id: orderId,
       tenantId,
@@ -147,7 +148,7 @@ export class MenuService {
 
     // 5. Insert order items
     const itemInserts = dto.items.map((item) => ({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       orderId,
       productId: item.productId,
       productName: productNameMap.get(item.productId) ?? item.productId,
@@ -163,7 +164,7 @@ export class MenuService {
     let pixQrCodeBase64: string | null = null;
 
     if (dto.paymentMethod === 'pix') {
-      const paymentId = crypto.randomUUID();
+      const paymentId = randomUUID();
 
       await this.dbService.db.insert(payments).values({
         id: paymentId,
